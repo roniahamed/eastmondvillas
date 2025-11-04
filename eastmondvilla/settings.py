@@ -206,3 +206,25 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_REQUIRED = True 
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+
+
+
+# dj-rest_auth
+REST_AUTH = {
+    'USE_JWT': True,
+    'JWT_AUTH_COOKIE': 'auth-token',
+    'JWT_AUTH_REFRESH_COOKIE': 'refresh-token',
+    'JWT_AUTH_HTTPONLY': False,
+    'SESSION_LOGIN': False,
+    'LOGOUT_ON_PASSWORD_CHANGE': False,
+    'REGISTER_SERIALIZER':'accounts.serializers.CustomRegisterSerializer'
+}
+
+
+
+
