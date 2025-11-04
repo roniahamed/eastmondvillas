@@ -28,6 +28,7 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
 
 SITE_URL = config("SITE_URL", default="http://localhost:8000")
+SITE_ID = 1
 # Application definition
 
 INSTALLED_APPS = [
@@ -57,6 +58,8 @@ INSTALLED_APPS = [
     # local apps
     'accounts',
 ]
+
+AUTH_USER_MODEL = 'accounts.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
