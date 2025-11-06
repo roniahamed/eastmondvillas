@@ -14,5 +14,6 @@ class CustomAuthBackend(ModelBackend):
     def user_can_authenticate(self, user):
         if not user.is_active:
             raise ValidationError("This account is inactive. Please Contact with support!")
-        return super().user_can_authentication(user)
+        # Call the correct parent method name (user_can_authenticate)
+        return super().user_can_authenticate(user)
     
