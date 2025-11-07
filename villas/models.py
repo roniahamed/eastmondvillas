@@ -77,27 +77,23 @@ class VillaImage(models.Model):
         ('other', 'Other'),
     )
     villa = models.ForeignKey(Villa, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='villa_images/', blank=True, null=True, help_text='Upload image file (preferred)')
-    # URL field removed. Provide a read-only property for compatibility with existing code.
-    @property
-    def url(self):
-        return ''
+    image = models.ImageField(upload_to='villa_images/', blank=False, null=False, help_text='Upload image file (preferred)')
 
     def clean(self):
-        # require at least one source of image
-        if not self.image and not self.url:
-            raise ValidationError('Provide either an uploaded image or an image URL.')
+        # require uploaded image
+        if not self.image:
+            raise ValidationError('An uploaded image is required.')
         super().clean()
 
     @property
     def image_url(self):
-        # prefer uploaded ImageField, fall back to URLField
+        # return URL of stored image if available
         if self.image:
             try:
                 return self.image.url
-            except ValueError:
-                pass
-        return self.url or ''
+            except Exception:
+                return ''
+        return ''
     caption = models.CharField(max_length=255, blank=True)
     type = models.CharField(max_length=30, choices=TYPE_CHOICES, default='media')
     is_primary = models.BooleanField(default=False)
@@ -107,7 +103,7 @@ class VillaImage(models.Model):
         ordering = ['order']
 
     def __str__(self):
-        identifier = self.image.name if self.image else (self.url or '')
+        identifier = self.image.name if self.image else 'no-image'
         return f"Image for {self.villa_id} - {identifier}"
 
 
