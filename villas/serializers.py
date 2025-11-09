@@ -10,18 +10,25 @@ class AmenitySerializer(serializers.ModelSerializer):
 
 class VillaImageSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(required=False, allow_null=True)
+    # accept villa id when creating an image via API
+    villa = serializers.PrimaryKeyRelatedField(queryset=Villa.objects.all(), required=True)
     # expose computed/public URL of the stored image
-    image_url = serializers.ReadOnlyField(source='image_url')
+    image_url = serializers.ReadOnlyField()
 
     class Meta:
         model = VillaImage
-        fields = ('id', 'image', 'image_url', 'caption', 'type', 'is_primary', 'order')
+        fields = ('id', 'villa', 'image', 'image_url', 'caption', 'type', 'is_primary', 'order')
 
     def validate(self, attrs):
         # On create, require an uploaded image
         if not self.instance and not attrs.get('image'):
             raise serializers.ValidationError('An image file is required.')
         return attrs
+
+    def create(self, validated_data):
+        # villa must be provided (PrimaryKeyRelatedField enforces this),
+        # delegate to default create which will set the FK correctly.
+        return super().create(validated_data)
 
 
 class VillaSerializer(serializers.ModelSerializer):
