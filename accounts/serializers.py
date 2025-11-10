@@ -9,9 +9,12 @@ from .models import User
 from allauth.account.models import EmailAddress
 
 class CustomUserDetailsSerializer(UserDetailsSerializer):
+    # Provide `pk` for clients that expect that key name in responses.
+    pk = serializers.IntegerField(source='id', read_only=True)
     class Meta(UserDetailsSerializer.Meta):
         model = User 
-        fields = ('id', 'email', 'name','role', 'permission', 'is_verified', 'phone', 'address', 'date_joined', 'is_active', 'is_staff')
+        # Include pk (alias to id) and the project-specific fields consumers expect.
+        fields = ('pk', 'id', 'email', 'name', 'role', 'permission', 'is_verified', 'phone', 'address', 'date_joined', 'is_active', 'is_staff')
 
 class CustomRegisterSerializer(RegisterSerializer):
     username = None
@@ -28,16 +31,22 @@ class CustomRegisterSerializer(RegisterSerializer):
     
     def get_cleaned_data(self):
         data = super().get_cleaned_data()
+        # Only allow these fields to be set during registration.
         data['email'] = self.validated_data.get('email', '')
         data['name'] = self.validated_data.get('name', '')
         data['phone'] = self.validated_data.get('phone', '')
+        # Do NOT include role or permission here — roles must be assigned by admins.
         return data
     
     def save(self, request):
+        # Use the parent save to create the user, then set only allowed fields.
         user = super().save(request)
-        for fields, value in self.validated_data.items():
-            if hasattr(user, fields):
-                setattr(user, fields, value)
+        # Only copy a whitelist of fields from validated_data to the user to
+        # prevent clients from assigning roles/permissions during registration.
+        allowed = ('name', 'phone')
+        for field in allowed:
+            if field in self.validated_data:
+                setattr(user, field, self.validated_data[field])
         user.is_active = True
         user.save()
         return user
