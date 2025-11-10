@@ -59,7 +59,7 @@ INSTALLED_APPS = [
 
     # local apps
     'accounts',
-    'villas',
+    # 'villas',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
@@ -225,7 +225,10 @@ REST_AUTH = {
     'JWT_AUTH_HTTPONLY': False,
     'SESSION_LOGIN': False,
     'LOGOUT_ON_PASSWORD_CHANGE': False,
-    'REGISTER_SERIALIZER':'accounts.serializers.CustomRegisterSerializer'
+    'REGISTER_SERIALIZER':'accounts.serializers.CustomRegisterSerializer',
+    # Provide custom serializer for the user details endpoint so `/api/auth/user/`
+    # returns the project's User fields (id/email/name/phone/role/permission/etc.).
+    'USER_DETAILS_SERIALIZER': 'accounts.serializers.CustomUserDetailsSerializer',
 }
 
 
