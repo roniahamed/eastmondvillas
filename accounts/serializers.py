@@ -61,3 +61,60 @@ class CustomRegisterSerializer(RegisterSerializer):
         if EmailAddress.objects.filter(email__iexact=email, verified=True).exists():
             raise serializers.ValidationError("This email address is already verified.")
         return email
+
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    """Serializer used by admins to create/update users including role and permission."""
+    # For creation password is required; for updates it's optional.
+    password = serializers.CharField(write_only=True, required=False, allow_blank=True)
+
+    class Meta:
+        model = User
+        fields = (
+            'id', 'email', 'name', 'role', 'permission', 'phone', 'address',
+            'is_verified', 'is_active', 'is_staff', 'password',
+        )
+        read_only_fields = ('is_verified',)
+
+    def validate_email(self, value):
+        # Ensure unique email except when updating the same instance
+        qs = User.objects.filter(email__iexact=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError('A user with that email already exists.')
+        return value
+
+    def validate(self, attrs):
+        """Ensure required fields are provided when creating a new user via admin.
+
+        Required on create: email, name, phone, role, permission, password
+        """
+        # If instance is None we're creating
+        if not getattr(self, 'instance', None):
+            required = ('email', 'name', 'phone', 'role', 'permission', 'password')
+            missing = [f for f in required if not attrs.get(f)]
+            if missing:
+                raise serializers.ValidationError({f: 'This field is required.' for f in missing})
+        return attrs
+
+    def create(self, validated_data):
+        # Extract password and required identity fields
+        password = validated_data.pop('password')
+        email = validated_data.pop('email')
+        name = validated_data.pop('name')
+
+        # Use the manager's create_user to ensure email normalization and
+        # proper password handling. Remaining validated_data may include
+        # phone, role, permission, address, is_active, is_staff, etc.
+        user = User.objects.create_user(email=email, name=name, password=password, **validated_data)
+        return user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        for attr, val in validated_data.items():
+            setattr(instance, attr, val)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance

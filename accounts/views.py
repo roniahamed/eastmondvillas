@@ -1,10 +1,30 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, permissions
+from rest_framework import status, permissions, generics
 from django.shortcuts import get_object_or_404
 from django.db import utils as db_utils
 
 from .models import User
+from .serializers import AdminUserSerializer
+from .permissions import IsAdmin
+
+
+class AdminUserListCreateView(generics.ListCreateAPIView):
+    """List all users and allow admins to create new users.
+
+    - GET /api/admin/users/  -> list users (admin/staff only)
+    - POST /api/admin/users/ -> create a new user with role/permission
+    """
+    queryset = User.objects.all().order_by('-date_joined')
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsAdmin]
+
+
+class AdminUserDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Retrieve, update or delete a user (admin/staff only)."""
+    queryset = User.objects.all()
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsAdmin]
 
 
 class UserDeleteView(APIView):
