@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'dj_rest_auth.registration',
     'allauth',
     'allauth.account',
+    'allauth.socialaccount',  # Required by allauth even without social providers
     # 'allauth.socialaccount.providers.google', 
 
 
