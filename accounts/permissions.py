@@ -1,53 +1,36 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
-class HasRole(BasePermission):
-    """Allow safe methods for everyone. For unsafe methods require the user to
-    have one of the allowed roles OR be staff.
-
-    - Views can set `allowed_roles = ('admin','manager', 'agent')` to declare
-      which roles may access unsafe methods.
-    - If `allowed_roles` is not set, the default fallback requires the user to
-      be staff or have role 'admin'.
+class IsAdminOrManager(BasePermission):
+    """
+    Custom permission to only allow users with 'admin' or 'manager' roles to edit objects.
+    Assumes the User model has a 'role' attribute.
     """
 
     def has_permission(self, request, view):
-        # Allow safe methods
-        if request.method in SAFE_METHODS:
-            return True
-
-        user = getattr(request, "user", None)
-        if not user or not getattr(user, "is_authenticated", False):
+        # Allow read-only access for any request
+        if not request.user or not request.user.is_authenticated:
             return False
-
-        allowed = getattr(view, "allowed_roles", None)
-        # If view doesn't declare allowed_roles: require staff or admin role
-        if not allowed:
-            return bool(getattr(user, "is_staff", False) or getattr(user, "role", None) == "admin")
-
-        return getattr(user, "role", None) in allowed or bool(getattr(user, "is_staff", False))
-
-
-class IsAdminOrReadOnly(BasePermission):
-    """Simple helper: safe methods allowed, unsafe require admin role or staff."""
-
-    def has_permission(self, request, view):
-        if request.method in SAFE_METHODS:
-            return True
-        user = getattr(request, "user", None)
-        if not user or not getattr(user, "is_authenticated", False):
-            return False
-        return getattr(user, "role", None) == "admin" or getattr(user, "is_staff", False)
-
-
-class IsAdmin(BasePermission):
-    """Allow access only to users with role 'admin' or is_staff=True.
-
-    Use this for endpoints that must be restricted to administrators.
+        return request.user.is_authenticated and request.user.role in ['admin', 'manager']
+    
+class IsAgentWithFullAccess(BasePermission):
+    """
+    Custom permission to allow users with 'agent' role full access,
+    while others have read-only access.
+    Assumes the User model has a 'role' attribute.
     """
 
-    def has_permission(self, request, view):
-        user = getattr(request, "user", None)
-        if not user or not getattr(user, "is_authenticated", False):
-            return False
-        return getattr(user, "role", None) == "admin" or getattr(user, "is_staff", False)
+    def has_object_permission(self, request, view, obj):
+        return obj.assigned_agent == request.user and request.user.permission == 'full_access'
+
+class IsAssignedAgentReadOnly(BasePermission):
+    """
+    Custom permission to allow only the assigned agent to have read-only access
+    to the object. No write permissions are granted.
+    Assumes the User model has a 'role' attribute.
+    """
+    def has_object_permission(self, request, view, obj):
+        if request.method in SAFE_METHODS:
+            return obj.assigned_agent == request.user
+        return False
+    
