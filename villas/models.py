@@ -5,36 +5,48 @@ from django.utils.text import slugify
 import random
 import string
 from django.core.exceptions import ValidationError
+import os 
 
 
-class Amenity(models.Model):
-    name = models.CharField(max_length=120, unique=True)
-
-    def __str__(self):
-        return self.name
 
 
-class Villa(models.Model):
-    STATUS_CHOICES = (
-        ('draft', 'Draft'),
-        ('pending', 'Pending'),
-        ('published', 'Published'),
-        ('archived', 'Archived'),
-    )
+class Property(models.Model):
 
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='villas')
+    class ListingType(models.TextChoices):
+        FOR_RENT = 'rent', 'For Rent'
+        FOR_SALE = 'sale', 'For Sale'
+    
+    class StatusType(models.TextChoices):
+        DRAFT = 'draft', 'Draft'
+        PENDING_REVIEW = 'pending_review', 'Pending Review'
+        PUBLISHED = 'published', 'Published'
+        ARCHIVED = 'archived', 'Archived'
+        SOLD = 'sold', 'Sold'
+
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_properties')
+
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     description = models.TextField(blank=True)
+
+    # pricing
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    property_type = models.CharField(max_length=50, blank=True)
-    max_guests = models.PositiveIntegerField(default=1)
+    booking_rate = models.JSONField(default=dict, blank=True, help_text="JSON format, e.g., { booking:  ['day':2, 'price': 500] }")
+
+    # property details
+    listing_type = models.CharField(max_length=10, choices=ListingType.choices, default=ListingType.FOR_RENT)
+    status = models.CharField(max_length=20, choices=StatusType.choices, default=StatusType.DRAFT)
+
+
     address = models.TextField(blank=True)
     city = models.CharField(max_length=120, blank=True)
+
+    max_guests = models.PositiveIntegerField(default=1)
     bedrooms = models.PositiveIntegerField(default=0)
     bathrooms = models.PositiveIntegerField(default=0)
     has_pool = models.BooleanField(default=False)
-    amenities = models.ManyToManyField(Amenity, blank=True, related_name='villas')
+    
+    amenities = models.JSONField(default=dict, blank=True, help_text="JSON format, e.g., {'wifi': true, 'pool': 'private'}")
 
     # location
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
@@ -43,13 +55,16 @@ class Villa(models.Model):
 
     seo_title = models.CharField(max_length=255, blank=True)
     seo_description = models.TextField(blank=True)
-    signature_distinctions = models.JSONField(blank=True, null=True)
-    staff = models.JSONField(blank=True, null=True)
-    calendar_link = models.URLField(blank=True, null=True)
+    signature_distinctions = models.JSONField(blank=True, null=True, help_text="List of unique features in JSON format, e.g., ['Ocean view', 'Private beach access']")
+    staff = models.JSONField(blank=True, null=True, help_text="List of staff details in JSON format, e.g., [{'role': 'chef', 'name': 'John Doe'}]")
+    calendar_link = models.URLField(blank=True, null=True, help_text="Link to external booking calendar (e.g., Google Calendar)")
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # agent details
+    assigned_agent = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_villas', help_text='Agent assigned to manage this villa', limit_choices_to={'role': 'agent'})
 
     def __str__(self):
         return f"{self.title} ({self.city})"
@@ -58,7 +73,7 @@ class Villa(models.Model):
         base = slugify(self.title)[:200]
         slug = base
         n = 0
-        while Villa.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+        while Property.objects.filter(slug=slug).exclude(pk=self.pk).exists():
             n += 1
             suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
             slug = f"{base}-{suffix}"
@@ -70,6 +85,120 @@ class Villa(models.Model):
         super().save(*args, **kwargs)
 
 
+# Media model for Villa images
+
+class Media(models.Model):
+    class MediaType(models.TextChoices):
+        IMAGE = 'image', 'Image'
+        VIDEO = 'video', 'Video'
+        BROCHURE = 'brochure', 'Brochure'
+        OTHER = 'other', 'Other'
+    
+    class CategoryType(models.TextChoices):
+        MEDIA = 'media', 'Media'       
+        BEDROOM = 'bedroom', 'Bedroom'
+        BATHROOM = 'bathroom', 'Bathroom' 
+        EXTERIOR = 'exterior', 'Exterior' 
+        OTHER = 'other', 'Other'
+    
+    # === Relationships and File Storage ===
+    listing = models.ForeignKey('Property', on_delete=models.CASCADE, related_name='media')
+    
+    file = models.FileField(
+        upload_to='property_media/', 
+        help_text='Upload any file (image, video, PDF, etc.)'
+    )
+
+     # === Automatic & User-Defined Classification ===
+    media_type = models.CharField(
+        max_length=10, 
+        choices=MediaType.choices, 
+        editable=False, # This is set automatically, not by the user
+        help_text='The technical type of the file (auto-detected)'
+    )
+    category = models.CharField(
+        max_length=30, 
+        choices=CategoryType.choices, 
+        default=CategoryType.MEDIA, 
+        help_text='Categorize this media file (e.g., Bedroom, Exterior)'
+    )
+    # === Display and Metadata ===
+
+    caption = models.CharField(max_length=255, blank=True, help_text='Optional caption or description for the media file.', null=True)
+
+    is_primary = models.BooleanField(
+        default=False, 
+        help_text='Mark this as the main/cover image for the listing.'
+    )
+
+    order = models.PositiveIntegerField(
+        default=0, 
+        help_text='Set the display order (0 comes first).'
+    )
+
+    class Meta:
+        ordering = ['order', 'id'] # Order by the 'order' field first, then by ID as a fallback
+
+    def __str__(self):
+        filename = os.path.basename(self.file.name) if self.file else 'no-file'
+        return f"{self.get_category_display()} for {self.listing.title} - {filename}"
+
+     # === Helper Property for URL ===
+    @property
+    def file_url(self):
+        """Returns the absolute URL of the stored file."""
+        if self.file:
+            try:
+                return self.file.url
+            except (ValueError, Exception):
+                return ''
+        return ''
+    
+     # === Automatic Logic ===
+    def _detect_media_type(self):
+        """Private method to determine media type from the filename extension."""
+        if not self.file:
+            return self.MediaType.OTHER
+            
+        filename = self.file.name
+        extension = os.path.splitext(filename)[1].lower()
+        
+        if extension in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+            return self.MediaType.IMAGE
+        elif extension in ['.mp4', '.mov', '.avi', '.wmv', '.mkv']:
+            return self.MediaType.VIDEO
+        elif extension in ['.pdf', '.doc', '.docx']:
+            return self.MediaType.BROCHURE
+        else:
+            return self.MediaType.OTHER
+    def save(self, *args, **kwargs):
+        """
+        Overrides the default save method to add custom logic:
+        1. Automatically detects and sets the `media_type`.
+        2. Ensures only one `is_primary` media exists per listing.
+        """
+        # 1. Auto-detect media_type before saving
+        self.media_type = self._detect_media_type()
+
+        # 2. If this instance is being set as primary, ensure no others are.
+        if self.is_primary:
+            # Find all other media for the same listing and un-set their primary status.
+            Media.objects.filter(listing=self.listing, is_primary=True).exclude(pk=self.pk).update(is_primary=False)
+        
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        """Adds model-level validation."""
+        if not self.file:
+            raise ValidationError('A file must be uploaded.')
+        super().clean()
+    
+    
+
+
+
+
+"""
 class VillaImage(models.Model):
     TYPE_CHOICES = (
         ('media', 'Media'),
@@ -95,7 +224,7 @@ class VillaImage(models.Model):
                 return ''
         return ''
     caption = models.CharField(max_length=255, blank=True)
-    type = models.CharField(max_length=30, choices=TYPE_CHOICES, default='media')
+    type = models.CharField(max_length=30, choices=TYPE_CHOICES, default='media', help_text='Type of image')
     is_primary = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)
 
@@ -106,20 +235,7 @@ class VillaImage(models.Model):
         identifier = self.image.name if self.image else 'no-image'
         return f"Image for {self.villa_id} - {identifier}"
 
-
-class BookingRate(models.Model):
-    PERIOD_CHOICES = (
-        ('per_night', 'Per Night'),
-        ('per_week', 'Per Week'),
-        ('per_month', 'Per Month'),
-    )
-    villa = models.ForeignKey(Villa, on_delete=models.CASCADE, related_name='rates')
-    period = models.CharField(max_length=20, choices=PERIOD_CHOICES)
-    minimum_stay = models.PositiveIntegerField(default=1)
-    rate = models.DecimalField(max_digits=10, decimal_places=2)
-
-    def __str__(self):
-        return f"{self.villa_id} - {self.period} @ {self.rate}"
+"""
 
 
 class Booking(models.Model):
@@ -130,7 +246,7 @@ class Booking(models.Model):
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
     )
-    villa = models.ForeignKey(Villa, on_delete=models.CASCADE, related_name='bookings')
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='bookings')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='bookings')
     full_name = models.CharField(max_length=255)
     email = models.EmailField()
@@ -146,4 +262,4 @@ class Booking(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Booking {self.id} - {self.villa_id} ({self.check_in} → {self.check_out})"
+        return f"Booking {self.id} - {self.property_id} ({self.check_in} → {self.check_out})"
