@@ -192,50 +192,6 @@ class Media(models.Model):
         if not self.file:
             raise ValidationError('A file must be uploaded.')
         super().clean()
-    
-    
-
-
-
-
-"""
-class VillaImage(models.Model):
-    TYPE_CHOICES = (
-        ('media', 'Media'),
-        ('bedroom', 'Bedroom'),
-        ('other', 'Other'),
-    )
-    villa = models.ForeignKey(Villa, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='villa_images/', blank=False, null=False, help_text='Upload image file (preferred)')
-
-    def clean(self):
-        # require uploaded image
-        if not self.image:
-            raise ValidationError('An uploaded image is required.')
-        super().clean()
-
-    @property
-    def image_url(self):
-        # return URL of stored image if available
-        if self.image:
-            try:
-                return self.image.url
-            except Exception:
-                return ''
-        return ''
-    caption = models.CharField(max_length=255, blank=True)
-    type = models.CharField(max_length=30, choices=TYPE_CHOICES, default='media', help_text='Type of image')
-    is_primary = models.BooleanField(default=False)
-    order = models.PositiveIntegerField(default=0)
-
-    class Meta:
-        ordering = ['order']
-
-    def __str__(self):
-        identifier = self.image.name if self.image else 'no-image'
-        return f"Image for {self.villa_id} - {identifier}"
-
-"""
 
 
 class Booking(models.Model):

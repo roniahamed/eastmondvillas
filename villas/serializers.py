@@ -1,75 +1,40 @@
 from rest_framework import serializers
-from .models import Villa, VillaImage, Amenity, Booking
+from .models import Property, Media, Booking
+from accounts.models import User
 
 
-class AmenitySerializer(serializers.ModelSerializer):
+class MediaSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Amenity
-        fields = ('id', 'name')
+        model = Media
+        fields = ['id', 'media_type', 'category', 'file', 'file_url', 'caption', 'is_primary', 'order']
+        read_only_fields = ['media_type', 'file_url']
 
 
-class VillaImageSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField(required=False, allow_null=True)
-    # accept villa id when creating an image via API
-    villa = serializers.PrimaryKeyRelatedField(queryset=Villa.objects.all(), required=True)
-    # expose computed/public URL of the stored image
-    image_url = serializers.ReadOnlyField()
 
-    class Meta:
-        model = VillaImage
-        fields = ('id', 'villa', 'image', 'image_url', 'caption', 'type', 'is_primary', 'order')
-
-    def validate(self, attrs):
-        # On create, require an uploaded image
-        if not self.instance and not attrs.get('image'):
-            raise serializers.ValidationError('An image file is required.')
-        return attrs
-
-    def create(self, validated_data):
-        # villa must be provided (PrimaryKeyRelatedField enforces this),
-        # delegate to default create which will set the FK correctly.
-        return super().create(validated_data)
-
-
-class VillaSerializer(serializers.ModelSerializer):
-    images = VillaImageSerializer(many=True, read_only=True)
-    # allow frontend to send a list of amenity ids when creating/updating
-    amenities = serializers.PrimaryKeyRelatedField(queryset=Amenity.objects.all(), many=True, required=False)
-    owner = serializers.ReadOnlyField(source='owner.id')
+class PropertySerializer(serializers.ModelSerializer):
+    media = MediaSerializer(many=True, read_only=True)
+    created_by = serializers.CharField(source='created_by.name', read_only=True)
 
     class Meta:
-        model = Villa
-        fields = ('id', 'owner', 'slug', 'title', 'description', 'price', 'property_type', 'max_guests', 'address', 'city', 'bedrooms', 'bathrooms', 'has_pool', 'amenities', 'latitude', 'longitude', 'place_id', 'seo_title', 'seo_description', 'signature_distinctions', 'staff', 'calendar_link', 'status', 'images')
+        model = Property
+        fields = [
+            'id', 'title', 'slug', 'description', 'price', 'booking_rate',
+            'listing_type', 'status', 'address', 'city', 'max_guests',
+            'bedrooms', 'bathrooms', 'has_pool', 'amenities', 'latitude',
+            'longitude', 'place_id', 'seo_title', 'seo_description',
+            'signature_distinctions', 'staff', 'calendar_link',
+            'created_at', 'updated_at', 'assigned_agent', 'created_by',
+            'created_by_name',
+            'media'
+        ]
+        read_only_fields = ['slug', 'created_by', 'created_by_name', 'media']
 
-    def create(self, validated_data):
-        amenities = validated_data.pop('amenities', [])
-        request = self.context.get('request')
-        if request and hasattr(request, 'user') and request.user.is_authenticated:
-            validated_data.setdefault('owner', request.user)
-        villa = Villa.objects.create(**validated_data)
-        if amenities:
-            villa.amenities.set(amenities)
-        return villa
-
-    def update(self, instance, validated_data):
-        amenities = validated_data.pop('amenities', None)
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        if amenities is not None:
-            instance.amenities.set(amenities)
-        return instance
+        
 
 
-class BookingSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.id')
 
-    class Meta:
-        model = Booking
-        fields = ('id', 'villa', 'user', 'full_name', 'email', 'phone', 'check_in', 'check_out', 'status', 'total_price', 'google_event_id', 'created_at')
 
-    def create(self, validated_data):
-        request = self.context.get('request')
-        if request and hasattr(request, 'user') and request.user.is_authenticated:
-            validated_data['user'] = request.user
-        return super().create(validated_data)
+
+
+
+        
