@@ -17,6 +17,7 @@ class MediaSerializer(serializers.ModelSerializer):
 class PropertySerializer(serializers.ModelSerializer):
     media = MediaSerializer(many=True, read_only=True)
     created_by = serializers.CharField(source='created_by.name', read_only=True)
+    location_coords = serializers.SerializerMethodField()
 
     class Meta:
         model = Property
@@ -27,10 +28,26 @@ class PropertySerializer(serializers.ModelSerializer):
             'longitude', 'place_id', 'seo_title', 'seo_description',
             'signature_distinctions', 'staff', 'calendar_link',
             'created_at', 'updated_at', 'assigned_agent', 'created_by',
-            'created_by_name',
-            'media'
+            'created_by_name','media', 'location_coords'
         ]
-        read_only_fields = ['slug', 'created_by', 'created_by_name', 'media']
+        read_only_fields = ['slug', 'created_by', 'created_by_name', 'media', 'created_at', 'updated_at', 'location_coords']
+    
+    def get_location_coords(self, obj):
+        if obj.latitude and obj.longitude:
+            return {
+                'lat': float(obj.latitude),
+                'lng': float(obj.longitude)
+            }
+        return None
+    
+    def validate(self, data):
+        lat = data.get('latitude')
+        lng = data.get('longitude')
+        
+        if (lat is not None and lng is None) or (lat is None and lng is not None):
+            raise serializers.ValidationError("Both latitude and longitude must be provided together.")
+            
+        return data
 
 
 
