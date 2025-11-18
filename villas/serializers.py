@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import Property, Media, Booking
 from accounts.models import User
+from datetime import date
+
 
 
 class MediaSerializer(serializers.ModelSerializer):
@@ -29,8 +31,41 @@ class PropertySerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['slug', 'created_by', 'created_by_name', 'media']
 
-        
 
+
+class BookingPropertySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Property
+        fields = ['id', 'title']
+
+
+class BookingUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'name', 'email']
+
+class BookingSerializer(serializers.ModelSerializer):
+    property_details = BookingPropertySerializer(source='property', read_only=True)
+    user_details = BookingUserSerializer(source='user', read_only=True)
+
+    class Meta:
+        model = Booking
+        fields = [
+            'id','property', 'email','phone','check_in','check_out','total_price','user','status','google_event_id','created_at','property_details','user_details']
+        read_only_fields = ['user', 'status', 'google_event_id', 'created_at']
+        extra_kwargs = {
+            'property': {'write_only': True}
+        }
+
+        def validate(self, data):
+            if 'check_in' in data and 'check_out' in data:
+                if data['check_in'] >= data['check_out']:
+                    raise serializers.ValidationError({"check_out": "Check-out date must be after check-in date."})
+            
+            if 'check_in' in data:
+                if data['check_in'] < date.today():
+                    raise serializers.ValidationError({"check_in": "Check-in date cannot be in the past."})
+            return data
 
 
 
