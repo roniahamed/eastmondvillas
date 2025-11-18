@@ -44,5 +44,14 @@ class IsAssignedAgentReadOnly(BasePermission):
         if request.method in SAFE_METHODS:
             return obj.assigned_agent == request.user
         return False
-    
-    
+
+
+class IsOwnerOrAdminOrManager(BasePermission):
+
+    message = "You do not have permission to view or edit this booking."
+
+    def has_object_permission(self, request, view, obj):
+        if request.user and request.user.is_authenticated and request.user.role in ['admin', 'manager']:
+            return True
+        
+        return obj.user == request.user
