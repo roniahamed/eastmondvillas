@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from .models import Property, Media, Booking
 from accounts.models import User
-from datetime import date
+from datetime import date, datetime
+from . import google_calendar_service
 
 
 
@@ -58,13 +59,42 @@ class BookingSerializer(serializers.ModelSerializer):
         }
 
         def validate(self, data):
-            if 'check_in' in data and 'check_out' in data:
-                if data['check_in'] >= data['check_out']:
-                    raise serializers.ValidationError({"check_out": "Check-out date must be after check-in date."})
+
+            check_in = data.get('check_in')
+            check_out = data.get('check_out')
+            prop = data.get('property')
+
+            if check_in and check_out and check_in >= check_out:
+                raise serializers.ValidationError({"check_out": "Check-out date must be after check-in date."})
             
-            if 'check_in' in data:
-                if data['check_in'] < date.today():
-                    raise serializers.ValidationError({"check_in": "Check-in date cannot be in the past."})
+            if check_in and check_in < date.today():
+                raise serializers.ValidationError({"check_in": "Check-in date cannot be in the past."})
+            
+            if check_in and check_out and prop:
+                if not prop.google_calendar_id:
+                    raise serializers.ValidationError({
+                        "property": "This property cannot be booked at the moment."
+                    })
+
+                start_time = datetime.combine(check_in, datetime.min.time())
+                end_time = datetime.combine(check_out, datetime.max.time())
+
+                try:
+                    is_available = google_calendar_service.check_availability(
+                        prop.google_calendar_id, 
+                        start_time, 
+                        end_time
+                    )
+                    
+                    if not is_available:
+                        raise serializers.ValidationError({
+                            "non_field_errors": ["The selected dates are not available for this property. Please choose different dates."]
+                        })
+                except Exception as e:
+                    raise serializers.ValidationError({
+                        "non_field_errors": [f"Could not verify availability at this time. Please try again later. Error: {e}"]
+                    })
+                
             return data
 
 
