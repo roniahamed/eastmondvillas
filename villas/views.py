@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
-from .services import google_calendar_service
+from . import google_calendar_service
 
 
 from .models import Property, Media
@@ -57,6 +57,7 @@ class PropertyViewSet(viewsets.ModelViewSet):
             print(f"Could not create Google Calendar for {property_instance.title}: {e}")
 
     def create(self, request, *args, **kwargs):
+
         try:
             with transaction.atomic():
                 property_serializer = self.get_serializer(data=request.data)
@@ -91,5 +92,8 @@ class PropertyViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(final_serializer.data)
         return Response(final_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     
+
+class BookingViewSet(viewsets.ModelViewSet):
+    serializer_class = BookingSerializer
 
 
