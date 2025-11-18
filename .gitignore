@@ -147,3 +147,15 @@ __pypackages__/
 .todo.md 
 # Ignore TODO.md if it contains sensitive info  
 TODO.md
+
+
+# Ignore TODO.md if it contains sensitive info
+TODO.md
+
+
+# Ignore local configuration files
+local_config.py
+
+
+# Ignore Google Cloud credentials
+eastmond-villas-google-service.json
