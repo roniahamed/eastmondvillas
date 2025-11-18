@@ -4,6 +4,8 @@ from rest_framework import viewsets, status, serializers
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
+from datetime import datetime, timedelta
 
 from . import google_calendar_service
 
@@ -156,7 +158,50 @@ class BookingViewSet(viewsets.ModelViewSet):
         self.perform_destroy(booking)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_property_availability(request, property_pk):
+    try:
+        prop = Property.objects.get(pk=property_pk)
+    except Property.DoesNotExist:
+        return Response({"error": "Property not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    if not prop.google_calendar_id:
+        return Response({"error": "Booking calendar is not configured for this property."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        month = int(request.query_params.get('month', datetime.now().month))
+        year = int(request.query_params.get('year', datetime.now().year))
+    except (ValueError, TypeError):
+        return Response({"error": "Invalid month or year parameter."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    start_of_month = datetime(year, month, 1)
+    next_month_start = (start_of_month.replace(day=28) + timedelta(days=4)).replace(day=1)
+    end_of_month = next_month_start - timedelta(days=1)
+
+    try:
+        events_result = google_calendar_service.service.events().list(
+            calendarId=prop.google_calendar_id,
+            timeMin=start_of_month.isoformat() + 'Z', # 'Z' মানে UTC
+            timeMax=end_of_month.isoformat() + 'Z',
+            singleEvents=True, 
+            orderBy='startTime'
+        ).execute()
+    except Exception as e:
+        return Response({"error": f"Could not fetch calendar events: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    booked_dates = []
+    for event in events_result.get('items', []):
+        if 'date' in event['start']:
+            start_date_str = event['start']['date']
+            end_date = datetime.fromisoformat(event['end']['date']) - timedelta(days=1)
+            end_date_str = end_date.strftime('%Y-%m-%d')
+            
+            booked_dates.append({'start': start_date_str, 'end': end_date_str})
         
+    return Response(booked_dates, status=status.HTTP_200_OK)
+
+
 
 
 
