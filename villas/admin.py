@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.db.models import Count
 from unfold.admin import ModelAdmin, TabularInline, StackedInline
 from unfold.decorators import display
-from .models import Property, Media, Booking
+from .models import Property, Media, Booking, PropertyImage, BedroomImage
 
 
 class MediaInline(TabularInline):
@@ -38,158 +38,57 @@ class BookingInline(TabularInline):
     ordering = ('-created_at',)
 
 
+from django.utils.html import format_html
+from django.contrib import admin
+
+
+class PropertyImageInline(admin.TabularInline):
+    model = PropertyImage
+    extra = 1
+    fields = ('image', 'preview')
+    readonly_fields = ('preview',)
+
+    def preview(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" style="height: 80px;" />', obj.image.url)
+        return "-"
+    
+class BedroomImageInline(admin.TabularInline):
+    model = BedroomImage
+    extra = 1
+    fields = ('image', 'preview')
+    readonly_fields = ('preview',)
+
+    def preview(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" style="height: 80px;" />', obj.image.url)
+        return "-"
+
+
+
+
 @admin.register(Property)
 class PropertyAdmin(ModelAdmin):
-    """Admin interface for Property model with Unfold styling."""
-    
-    list_display = (
-        'title', 
-        'city', 
-        'listing_type', 
-        'status', 
-        'price_display',
-        'property_stats',
-        'assigned_agent',
-        'created_at'
-    )
-    
-    list_filter = (
-        'listing_type',
-        'status',
-        'pool',
-        'city',
-        'created_at',
-    )
-    
-    search_fields = (
-        'title',
-        'description',
-        'city',
-        'address',
-        'slug',
-    )
-    
-    readonly_fields = (
-        'created_at',
-        'updated_at',
-        'slug',
-        'media_count',
-        'booking_count',
-    )
-    
-    fieldsets = (
-        ('Basic Information', {
-            'fields': (
-                'title',
-                'description',
-                'listing_type',
-                'status',
-            )
-        }),
-        ('Pricing', {
-            'fields': (
-                'price',
-                'booking_rate',
-            )
-        }),
-        ('Property Details', {
-            'fields': (
-                'max_guests',
-                'bedrooms',
-                'bathrooms',
-                'pool',
-                'amenities',
-            )
-        }),
-        ('Location', {
-            'fields': (
-                'address',
-                'city',
-                'latitude',
-                'longitude',
-                'place_id',
-            )
-        }),
-        ('SEO & Marketing', {
-            'fields': (
-                'slug',
-                'seo_title',
-                'seo_description',
-                'signature_distinctions',
-            ),
-            'classes': ('collapse',)
-        }),
-        ('Staff & Management', {
-            'fields': (
-                'staff',
-                'calendar_link',
-                'assigned_agent',
-                'created_by',
-            )
-        }),
-        ('Statistics', {
-            'fields': (
-                'media_count',
-                'booking_count',
-                'created_at',
-                'updated_at',
-            ),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    inlines = [MediaInline, BookingInline]
-    
-    @display(description='Price', ordering='price')
-    def price_display(self, obj):
-        """Display formatted price."""
-        return format_html(
-            '<strong>${:,.2f}</strong>',
-            obj.price
-        )
-    
-    @display(description='Details', header=True)
-    def property_stats(self, obj):
-        """Display property statistics in a compact format."""
-        return format_html(
-            '🛏️ {} | 🚿 {} | 👥 {}',
-            obj.bedrooms,
-            obj.bathrooms,
-            obj.max_guests
-        )
-    
-    @display(description='Media Files')
-    def media_count(self, obj):
-        """Count of associated media files."""
-        if obj.pk:
-            count = obj.media.count()
-            return format_html(
-                '<a href="{}?listing__id__exact={}">{} file(s)</a>',
-                reverse('admin:villas_media_changelist'),
-                obj.pk,
-                count
-            )
+    list_display = ( 'id', 'title', 'status', 'listing_type', 'price', 'assigned_agent_link', 'booking_count', 'created_at' )
+    list_filter = ( 'status', 'listing_type', 'city', 'created_at', )
+    search_fields = ( 'title', 'description', 'address', 'city', 'assigned_agent__name', )
+    readonly_fields = ( 'slug', 'created_at', 'updated_at', 'booking_count', 'assigned_agent_link' )
+    inlines = [ BookingInline, PropertyImageInline, BedroomImageInline ]
+    ordering = ('-created_at',)
+
+
+    @display(description='Assigned Agent', ordering='assigned_agent__name')
+    def assigned_agent_link(self, obj):
+        """Link to the assigned agent's admin page."""
+        if obj.assigned_agent:
+            url = reverse('admin:accounts_user_change', args=[obj.assigned_agent.pk])
+            return format_html('<a href="{}">{}</a>', url, obj.assigned_agent.name)
         return '-'
-    
-    @display(description='Bookings')
+    @display(description='Booking Count')
     def booking_count(self, obj):
-        """Count of associated bookings."""
-        if obj.pk:
-            count = obj.bookings.count()
-            return format_html(
-                '<a href="{}?property__id__exact={}">{} booking(s)</a>',
-                reverse('admin:villas_booking_changelist'),
-                obj.pk,
-                count
-            )
-        return '-'
+        """Display the number of bookings for the property."""
+        return obj.bookings.count()
     
-    def get_queryset(self, request):
-        """Optimize queries with select_related and prefetch_related."""
-        qs = super().get_queryset(request)
-        return qs.select_related('assigned_agent', 'created_by').prefetch_related('media', 'bookings')
-
-
 @admin.register(Media)
 class MediaAdmin(ModelAdmin):
     """Admin interface for Media model with Unfold styling."""
