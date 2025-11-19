@@ -41,16 +41,21 @@ class Property(models.Model):
     address = models.TextField(blank=True)
     city = models.CharField(max_length=120, blank=True)
 
-    max_guests = models.PositiveIntegerField(default=1)
+    add_guest = models.PositiveIntegerField(default=1)
     bedrooms = models.PositiveIntegerField(default=0)
     bathrooms = models.PositiveIntegerField(default=0)
     pool = models.PositiveIntegerField(default=0)
     
-    amenities = models.JSONField(default=dict, blank=True, help_text="JSON format, e.g., {'wifi': true, 'pool': 'private'}")
+    outdoor_amenities = models.JSONField(default=dict, blank=True, help_text="JSON format, e.g., {'wifi': true, 'pool': 'private'}")
+
+    interior_amenities = models.JSONField(default=dict, blank=True, help_text="JSON format, e.g., {'wifi': true, 'pool': 'private'}")
+
+
 
     # location
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+
     place_id = models.CharField(max_length=255, blank=True, null=True)
 
     seo_title = models.CharField(max_length=255, blank=True)
@@ -222,3 +227,14 @@ class Booking(models.Model):
 
     def __str__(self):
         return f"Booking {self.id} - {self.property_id} ({self.check_in} → {self.check_out})"
+
+
+
+class PropertyImage(models.Model):
+    property = models.ForeignKey("Property", on_delete=models.CASCADE, related_name="images")
+    image = models.ImageField(upload_to="properties/")
+
+
+class BedroomImage(models.Model):
+    property = models.ForeignKey("Property", on_delete=models.CASCADE, related_name="bedroom_images")
+    image = models.ImageField(upload_to="properties/bedrooms/")
