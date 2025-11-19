@@ -24,7 +24,7 @@ class PropertySerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'slug', 'description', 'price', 'booking_rate',
             'listing_type', 'status', 'address', 'city', 'max_guests',
-            'bedrooms', 'bathrooms', 'has_pool', 'amenities', 'latitude',
+            'bedrooms', 'bathrooms', 'pool', 'amenities', 'latitude',
             'longitude', 'place_id', 'seo_title', 'seo_description',
             'signature_distinctions', 'staff', 'calendar_link',
             'created_at', 'updated_at', 'assigned_agent', 'created_by_name','media', 'location_coords'

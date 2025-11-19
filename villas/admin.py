@@ -56,7 +56,7 @@ class PropertyAdmin(ModelAdmin):
     list_filter = (
         'listing_type',
         'status',
-        'has_pool',
+        'pool',
         'city',
         'created_at',
     )
@@ -97,7 +97,7 @@ class PropertyAdmin(ModelAdmin):
                 'max_guests',
                 'bedrooms',
                 'bathrooms',
-                'has_pool',
+                'pool',
                 'amenities',
             )
         }),

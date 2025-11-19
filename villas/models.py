@@ -44,7 +44,7 @@ class Property(models.Model):
     max_guests = models.PositiveIntegerField(default=1)
     bedrooms = models.PositiveIntegerField(default=0)
     bathrooms = models.PositiveIntegerField(default=0)
-    has_pool = models.BooleanField(default=False)
+    pool = models.PositiveIntegerField(default=0)
     
     amenities = models.JSONField(default=dict, blank=True, help_text="JSON format, e.g., {'wifi': true, 'pool': 'private'}")
 
