@@ -1,9 +1,8 @@
 from rest_framework import serializers
-from .models import Property, Media, Booking
+from .models import Property, Media, Booking, PropertyImage, BedroomImage
 from accounts.models import User
 from datetime import date, datetime
 from . import google_calendar_service
-
 
 
 class MediaSerializer(serializers.ModelSerializer):
@@ -13,29 +12,41 @@ class MediaSerializer(serializers.ModelSerializer):
         read_only_fields = ['media_type', 'file_url']
 
 
+class PropertyImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PropertyImage
+        fields = ["id", "image"]
+
+
+
+class BedroomImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BedroomImage
+        fields = ["id", "image"]
+
 
 class PropertySerializer(serializers.ModelSerializer):
-    media = MediaSerializer(many=True, read_only=True)
     created_by_name = serializers.SerializerMethodField()
     location_coords = serializers.SerializerMethodField()
-    media_count = serializers.SerializerMethodField()
     booking_count = serializers.SerializerMethodField()
     price_display = serializers.SerializerMethodField()
     property_stats = serializers.SerializerMethodField()
+    property_images = PropertyImageSerializer(many=True, read_only=True)
+    bedroom_images = BedroomImageSerializer(many=True, read_only=True)
 
     class Meta:
         model = Property
         fields = [
             'id', 'title', 'slug', 'description', 'price', 'price_display', 'booking_rate',
-            'listing_type', 'status', 'address', 'city', 'max_guests',
-            'bedrooms', 'bathrooms', 'pool', 'amenities', 'latitude',
+            'listing_type', 'status', 'address', 'city', 'add_guest',
+            'bedrooms', 'bathrooms', 'pool', 'outdoor_amenities','interior_amenities', 'latitude',
             'longitude', 'place_id', 'seo_title', 'seo_description',
             'signature_distinctions', 'staff', 'calendar_link', 'google_calendar_id',
             'created_at', 'updated_at', 'assigned_agent', 'created_by', 'created_by_name',
-            'media', 'media_count', 'booking_count', 'location_coords', 'property_stats'
+            'booking_count', 'location_coords', 'property_stats', 'property_images', 'bedroom_images'
         ]
         read_only_fields = [
-            'slug', 'created_by', 'created_by_name', 'media', 'media_count', 'booking_count',
+            'slug', 'created_by', 'created_by_name', 'booking_count', 'property_images', 'bedroom_images',
             'created_at', 'updated_at', 'location_coords', 'price_display', 'property_stats'
         ]
 
@@ -53,8 +64,6 @@ class PropertySerializer(serializers.ModelSerializer):
                 return None
         return None
 
-    def get_media_count(self, obj):
-        return getattr(obj, 'media', []).count() if hasattr(obj, 'media') else 0
 
     def get_booking_count(self, obj):
         return getattr(obj, 'bookings', []).count() if hasattr(obj, 'bookings') else 0
