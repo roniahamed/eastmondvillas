@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from . import google_calendar_service
 
 
-from .models import Property, Media, Booking
+from .models import Property, Media, Booking, PropertyImage, BedroomImage
 from .serializers import PropertySerializer , BookingSerializer
 
 
@@ -66,25 +66,24 @@ class PropertyViewSet(viewsets.ModelViewSet):
                 property_serializer.is_valid(raise_exception=True)
                 self.perform_create(property_serializer)
                 property_instance = property_serializer.instance
-                media_files = request.FILES.getlist('media_files')
-                media_metadata_str_list = request.POST.getlist('media_metadata')
 
-                if len(media_files) != len(media_metadata_str_list):
-                    raise serializers.ValidationError("Mismatch between files and metadata.")
+                property_images = request.FILES.getlist('property_images')
 
-                for i, file_obj in enumerate(media_files):
-                    try:
-                        metadata = json.loads(media_metadata_str_list[i])
-                    except json.JSONDecodeError:
-                        raise serializers.ValidationError(f"Invalid JSON metadata at index {i}.")
-                    Media.objects.create(
-                        listing=property_instance,
-                        file=file_obj,
-                        category=metadata.get('category', Media.CategoryType.MEDIA),
-                        caption=metadata.get('caption', ''),
-                        is_primary=metadata.get('is_primary', False),
-                        order=metadata.get('order', i)
-                    )
+                # Only save images that are not empty to avoid validation errors
+                for img in property_images:
+                    if not img:
+                        continue
+                    # ensure it's an uploaded file with a name and non-zero size
+                    if hasattr(img, 'name') and getattr(img, 'size', None) and img.size > 0:
+                        PropertyImage.objects.create(listing=property_instance, image=img)
+
+                bedroom_images = request.FILES.getlist('bedroom_images')
+                for img in bedroom_images:
+                    if not img:
+                        continue
+                    if hasattr(img, 'name') and getattr(img, 'size', None) and img.size > 0:
+                        BedroomImage.objects.create(listing=property_instance, image=img)
+                
         except serializers.ValidationError as e:
             return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
