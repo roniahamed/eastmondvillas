@@ -1,3 +1,403 @@
+# Accounts - Admin API
+
+This document describes the Admin-managed user endpoints and the user-delete endpoint for the Accounts app. It documents the request/response payloads, field definitions, validation rules, permissions, and example status codes.
+
+Base URL
+--
+
+The collection uses the environment variable `{{base_url}}` — e.g. `http://localhost:8000/api`.
+
+Authentication & Authorization
+--
+
+- Authentication: endpoints require authentication. The collection assumes Bearer JWT tokens in an `Authorization: Bearer {{access_token}}` header.
+- Admin/Staff endpoints require the custom `IsAdmin` permission (admin role or staff). Ordinary authenticated users can only delete their own account via the `auth/users/<id>/` endpoint.
+
+Endpoints overview
+--
+
+- GET /admin/users/ — List users (admin/staff only)
+- POST /admin/users/ — Create user (admin/staff only)
+- GET /admin/users/<id>/ — Retrieve single user (admin/staff only)
+- PUT /admin/users/<id>/ — Update user (admin/staff only)
+- DELETE /admin/users/<id>/ — Delete user (admin/staff only)
+- DELETE /auth/users/<id>/ — Delete account (authenticated users may delete their own account; staff/admin may delete any account)
+
+Field definitions (AdminUserSerializer)
+--
+
+Error format notes
+--
+
+- Validation errors from DRF serializers are returned with field keys and messages. Example shapes you may see:
+  - Field error (single): { "email": ["A user with that email already exists."] }
+  - Non-field error: { "non_field_errors": ["Some error"] }
+
+Auth & Registration endpoints (dj-rest-auth)
+--
+
+The `accounts` app includes `dj_rest_auth` under the `auth/` prefix and `dj_rest_auth.registration` under `registration/`. Below are the common routes exposed by those packages (as mounted in `accounts/urls.py`) with example payloads and responses. Exact available routes depend on which dj-rest-auth features are enabled in project settings (simplejwt, email verification, etc.).
+
+1) Login (obtain JWT or tokens)
+
+- Path: POST /auth/login/
+- Purpose: Authenticate and obtain access/refresh tokens. When the project uses `djangorestframework-simplejwt` with dj-rest-auth this returns `access` and `refresh` tokens.
+- Request body (example):
+
+  {
+    "email": "admin@example.com",
+    "password": "AdminPassword123"
+  }
+
+- Responses:
+  - 200 OK (JWT):
+
+    {
+      "access": "<jwt_access_token>",
+      "refresh": "<jwt_refresh_token>"
+    }
+
+  - 400 Bad Request (invalid credentials):
+
+    {
+      "detail": "Unable to log in with provided credentials."
+    }
+
+2) Logout
+
+- Path: POST /auth/logout/
+- Purpose: Logout the user. Behavior depends on token backend (may blacklist refresh token).
+- Request: Authorization header required
+- Response: 200 OK
+
+  {
+    "detail": "Successfully logged out."
+  }
+
+3) Current user (user details)
+
+- Path: GET /auth/user/
+- Purpose: Return the current authenticated user's details using `CustomUserDetailsSerializer`.
+- Request: Authorization header required
+- Response (200 OK example):
+
+  {
+    "pk": 1,
+    "id": 1,
+    "email": "admin@example.com",
+    "name": "Admin",
+    "role": "admin",
+    "permission": "full_access",
+    "is_verified": true,
+    "phone": "+15550000000",
+    "address": "HQ",
+    "date_joined": "2025-01-01T00:00:00Z",
+    "is_active": true,
+    "is_staff": true
+  }
+
+4) Password change
+
+- Path: POST /auth/password/change/
+- Purpose: Change the logged-in user's password.
+- Request body example:
+
+  {
+    "old_password": "OldPass123",
+    "new_password1": "NewStrongPass123",
+    "new_password2": "NewStrongPass123"
+  }
+
+- Response: 200 OK
+
+  {
+    "detail": "New password has been saved."
+  }
+
+5) Password reset (request)
+
+- Path: POST /auth/password/reset/
+- Purpose: Request a password reset email be sent to the given address.
+- Request body example:
+
+  {
+    "email": "user@example.com"
+  }
+
+- Response: 200 OK
+
+  {
+    "detail": "Password reset e-mail has been sent."
+  }
+
+6) Password reset confirm (tokenized)
+
+- Path: POST /auth/password/reset/confirm/
+- Purpose: Confirm a password reset using uid/token (depends on frontend and email flow). Payload depends on the configured backend.
+- Response: 200 OK on success.
+
+7) Registration (sign up)
+
+- Path: POST /registration/
+- Purpose: Register a new user using `CustomRegisterSerializer` which allows `email`, `name`, `phone`, `password1`, `password2`. Roles and permissions are NOT accepted via regular registration and must be assigned by admins.
+- Request body example:
+
+  {
+    "email": "signup@example.com",
+    "name": "Signup User",
+    "phone": "+15557778888",
+    "password1": "SignupPass123",
+    "password2": "SignupPass123"
+  }
+
+- Response (201 Created example):
+
+  {
+    "pk": 11,
+    "email": "signup@example.com",
+    "name": "Signup User",
+    "phone": "+15557778888",
+    "is_active": true
+  }
+
+8) Verify email (if enabled)
+
+- Path: POST /registration/verify-email/
+- Purpose: Verify email address using the key sent by email (if allauth/dj-rest-auth verification is enabled).
+- Request body example:
+
+  {
+    "key": "<email-confirm-key>"
+  }
+
+- Response: 200 OK (body may vary depending on configuration).
+
+Notes & assumptions
+--
+
+- The exact dj-rest-auth endpoints available and their shapes depend on how dj-rest-auth and allauth are configured in the project (simplejwt vs token auth, email verification enabled, custom serializers). The examples above match the typical simplejwt + dj-rest-auth + dj-rest-auth.registration setup and the custom serializers present in this repository.
+- If you want, I can automatically add these auth/register requests to the Postman collection with Postman test scripts that store the returned `access` token into the `{{access_token}}` environment variable.
+
+Full endpoint reference (detailed)
+--
+
+Below is a full, explicit reference for each path that `accounts/urls.py` registers. Each entry includes: path, allowed methods, required permissions, request payload (when applicable), sample responses, and notes.
+
+1) auth/ (dj-rest-auth)
+  - Registered path: `path('auth/', include('dj_rest_auth.urls'))`
+  - Notes: dj-rest-auth exposes several endpoints. Which ones are active depends on settings. Typical endpoints include:
+
+  a) POST /auth/login/
+    - Purpose: Authenticate and obtain tokens (session or JWT depending on config).
+    - Request body example: { "email": "user@example.com", "password": "Password123" }
+    - Success: 200 OK with token payload (e.g., { "access": "...", "refresh": "..." }) or session info.
+    - Errors: 400 Bad Request for invalid credentials.
+
+  b) POST /auth/logout/
+    - Purpose: Logout the current user. May accept the refresh token to blacklist it when using JWT.
+    - Required: Authorization header
+    - Success: 200 OK { "detail": "Successfully logged out." }
+
+  c) GET /auth/user/
+    - Purpose: Return the current authenticated user's details using `CustomUserDetailsSerializer`.
+    - Required: Authorization header
+    - Success: 200 OK (user object)
+
+  d) POST /auth/password/change/
+    - Purpose: Change the authenticated user's password.
+    - Request: { "old_password": "...", "new_password1": "...", "new_password2": "..." }
+    - Success: 200 OK { "detail": "New password has been saved." }
+
+  e) POST /auth/password/reset/
+    - Purpose: Request a password reset email be sent. Request: { "email": "user@example.com" }
+    - Success: 200 OK { "detail": "Password reset e-mail has been sent." }
+
+  f) POST /auth/password/reset/confirm/
+    - Purpose: Confirm a password reset using uid/token or other scheme. Payload depends on configuration.
+    - Success: 200 OK on success.
+
+2) registration/ (dj-rest-auth.registration)
+  - Registered path: `path('registration/', include('dj_rest_auth.registration.urls'))`
+  - Notes: Exposes registration endpoints from dj-rest-auth/Allauth.
+
+  a) POST /registration/
+    - Purpose: Register a new user. The project uses `CustomRegisterSerializer` so accepted fields are `email`, `name`, `phone`, `password1`, `password2`.
+    - Example request:
+
+     {
+      "email": "signup@example.com",
+      "name": "Signup User",
+      "phone": "+15557778888",
+      "password1": "SignupPass123",
+      "password2": "SignupPass123"
+     }
+
+    - Success: 201 Created with basic user info (pk, email, name, phone, is_active)
+
+  b) POST /registration/verify-email/
+    - Purpose: Confirm email address using a key sent in the verification email (if email verification is enabled).
+    - Request: { "key": "<email-confirm-key>" }
+    - Success: 200 OK (body may vary)
+
+3) auth/users/<pk>/ (User deletion view)
+  - Registered path: `path('auth/users/<int:pk>/', UserDeleteView.as_view(), name='user-delete')`
+  - Methods: DELETE
+  - Permissions: `IsAuthenticated` — delete is allowed if the requesting user is staff/is admin role OR if the requester is deleting their own account.
+  - Success: 204 No Content
+  - Failure: 403 Forbidden when attempting to delete another user's account without staff/admin permissions. Body: { "detail": "You do not have permission to perform this action." }
+  - Notes: If DB constraints prevent deletion (OperationalError), the view anonymizes the target user (email changed to `deleted_user_<pk>@example.invalid`, name set to `[deleted]`, `is_active=False`) and still returns 204.
+
+4) admin/users/ (Admin-managed users list/create)
+  - Registered path: `path('admin/users/', AdminUserListCreateView.as_view(), name='admin-user-list-create')`
+  - Methods: GET, POST
+  - Permissions: `IsAdmin` custom permission — only staff or admin-role users should be able to access.
+
+  a) GET /admin/users/
+    - Purpose: Return a list of users, ordered by `-date_joined`.
+    - Request headers: Authorization required
+    - Success: 200 OK — list of user objects (AdminUserSerializer fields)
+
+  b) POST /admin/users/
+    - Purpose: Create a new user with admin-controlled fields (role, permission, is_staff, is_active)
+    - Required fields (on create): `email`, `name`, `phone`, `role`, `permission`, `password`
+    - Example request body:
+
+     {
+      "email": "newuser@example.com",
+      "name": "New User",
+      "phone": "+15550001111",
+      "role": "agent",
+      "permission": "only_view",
+      "password": "SecretPassword123",
+      "address": "Unit 5, 100 Example Street",
+      "is_active": true,
+      "is_staff": false
+     }
+
+    - Success: 201 Created with created user object (id, email, name, role, permission, phone, address, is_verified, is_active, is_staff)
+    - Errors: 400 Bad Request for missing required fields or email uniqueness violation
+
+5) admin/users/<pk>/ (Admin-managed user detail/update/delete)
+  - Registered path: `path('admin/users/<int:pk>/', AdminUserDetailView.as_view(), name='admin-user-detail')`
+  - Methods: GET, PUT, DELETE (Retrieve, update, destroy)
+  - Permissions: `IsAdmin`
+
+  a) GET /admin/users/<pk>/
+    - Purpose: Retrieve a single user's admin-serializable representation.
+    - Success: 200 OK
+
+  b) PUT /admin/users/<pk>/
+    - Purpose: Update fields on the user. `password` optional; when supplied it's hashed via `set_password()`.
+    - Example request body (partial/full replacement accepted by DRF generic view):
+
+     {
+      "email": "updated@example.com",
+      "name": "Updated Name",
+      "phone": "+15559990000",
+      "role": "manager",
+      "permission": "download",
+      "is_staff": true
+     }
+
+    - Success: 200 OK with updated user object
+    - Errors: 400 Bad Request on validation problems
+
+  c) DELETE /admin/users/<pk>/
+    - Purpose: Permanently delete a user or anonymize when DB constraints prevent deletion.
+    - Success: 204 No Content
+    - Errors: 403 Forbidden if caller lacks admin permission
+
+Example status codes summary
+--
+
+- 200 OK — Successful GET / PUT / POST (when returning resource)
+- 201 Created — Successful resource creation (POST /admin/users/, POST /registration/)
+- 204 No Content — Successful deletion (DELETE endpoints)
+- 400 Bad Request — Validation errors or bad credentials for login
+- 401 Unauthorized — Missing/invalid authentication credentials
+- 403 Forbidden — Permission denied (IsAdmin guard or unauthorized deletion)
+
+Next steps I can take for you
+--
+
+- Add Postman tests that capture tokens from `/auth/login/` and store in `{{access_token}}`.
+- Generate a minimal `docs/ACCOUNTS_API_QUICKSTART.md` with import steps and example flows (register -> verify -> login -> create user).
+- Add request/response schema examples in JSON Schema or OpenAPI components if you'd like an OpenAPI document generated from these descriptions.
+
+If you'd like, I'll continue and implement any of the next steps above. 
+
+
+{
+  "id": 10,
+  "email": "updated@example.com",
+  "name": "Updated Name",
+  "role": "manager",
+  "permission": "download",
+  "phone": "+15559990000",
+  "address": "Unit 5, 100 Example Street",
+  "is_verified": false,
+  "is_active": true,
+  "is_staff": true
+}
+
+3) Admin — Delete user (successful)
+
+Request
+
+DELETE {{base_url}}/admin/users/10/
+
+Response
+
+Status: 204 No Content (empty body)
+
+4) User — Delete own account (for non-staff)
+
+Request
+
+DELETE {{base_url}}/auth/users/10/
+
+Response (success)
+
+Status: 204 No Content
+
+Response (unauthorized attempt to delete another user)
+
+Status: 403 Forbidden
+
+{
+  "detail": "You do not have permission to perform this action."
+}
+
+Edge cases & notes
+--
+
+- Deletion fallback: The `UserDeleteView` attempts to `delete()` the model instance. If a DB OperationalError occurs (e.g., due to DB-level foreign-key constraints or other issues), the view anonymizes the user (changes email to `deleted_user_<pk>@example.invalid`, sets name to "[deleted]", sets `is_active=False`) and returns 204. This ensures clients cannot rely solely on existence checks to determine whether a user was permanently removed.
+- Email verification: `is_verified` is managed by allauth's `EmailAddress` model; registration and email verification flows are separate from the admin-managed create endpoint.
+- Password handling: passwords are write-only. Never include them in GET responses. Admins creating users must provide `password` in the create payload.
+
+Postman / environment hints
+--
+
+- Use the provided Postman environment file `docs/postman_accounts_admin_environment.json` to set `{{base_url}}` and `{{access_token}}`.
+- To automate obtaining tokens, add a login call that posts to the project's auth/login endpoint (dj-rest-auth) with `admin_email` and `admin_password` and save the returned token to `{{access_token}}`.
+
+Quick checklist for consumers
+--
+
+1. Import `docs/postman_accounts_admin_environment.json` into Postman and set `base_url` to your server.
+2. Obtain a valid access token (JWT) for an admin/staff account and set `{{access_token}}`.
+3. Use the collection `docs/postman_accounts_admin_collection.json` to run the endpoints.
+
+Change log
+--
+
+- 2025-11-12 — Initial documentation created for Admin user endpoints and fields.
+
+Questions or edits
+--
+
+If you want: add an example login request to the collection to auto-populate `{{access_token}}`, or include sample Postman tests/assertions for each response.
+
 # Accounts — Admin & Auth API Reference
 
 A developer-friendly, code-backed reference for the `accounts` app endpoints that the frontend will call. This document covers admin user management endpoints implemented in the app plus the auth/registration endpoints exposed by `dj-rest-auth` and `dj-rest-auth.registration` at the paths configured in `accounts/urls.py`.
@@ -24,314 +424,5 @@ Authentication
 Error format notes
 - Validation errors from DRF serializers are returned with field keys and messages. Example shapes you may see:
   - Field error (single): { "email": ["A user with that email already exists."] }
-  - Field error (string): { "email": "A user with that email already exists." }
+  *** End Patch
   - Non-field error: { "non_field_errors": ["Some error"] }
-- Permission denied: 403 Forbidden
-  { "detail": "You do not have permission to perform this action." }
-- Not found: 404 Not Found
-  { "detail": "Not found." }
-
----
-
-## 1) Admin: List users
-- Endpoint: GET /api/admin/users/
-- Permission: Admin only (permission class: `IsAdmin`) — user must have `role == 'admin'` or `is_staff == True`.
-- Query params: pagination or filtering may be provided by project-level DRF settings; this view returns the full queryset ordered by `-date_joined` by default.
-
-Request example
-- Headers:
-  Authorization: Bearer <ADMIN_TOKEN>
-
-Response (200 OK)
-[
-  {
-    "id": 12,
-    "email": "alice@example.com",
-    "name": "Alice Smith",
-    "role": "manager",
-    "permission": "read_write",
-    "phone": "+441234567890",
-    "address": "123 Example St",
-    "is_verified": false,
-    "is_active": true,
-    "is_staff": false
-  },
-  { /* more users */ }
-]
-
-Errors
-- 401 Unauthorized: missing/invalid credentials
-- 403 Forbidden: authenticated but not admin/staff
-
----
-
-## 2) Admin: Create a user
-- Endpoint: POST /api/admin/users/
-- Permission: Admin only (`IsAdmin`)
-- Content-Type: application/json
-- Important: For creation the `AdminUserSerializer` enforces these required fields: `email`, `name`, `phone`, `role`, `permission`, `password`.
-
-Request body (JSON) — required fields for create
-{
-  "email": "new.user@example.com",
-  "name": "New User",
-  "phone": "+441234567899",
-  "role": "agent",
-  "permission": "read_write",
-  "password": "StrongP@ssw0rd",
-  "address": "Optional address",
-  "is_active": true,
-  "is_staff": false
-}
-
-Example curl (using Bearer token)
-```bash
-curl -X POST "https://your.api.host/api/admin/users/" \
-  -H "Authorization: Bearer <ADMIN_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"new.user@example.com","name":"New User","phone":"+441234567899","role":"agent","permission":"read_write","password":"StrongP@ssw0rd"}'
-```
-
-Success response (201 Created)
-Status: 201
-Body:
-{
-  "id": 42,
-  "email": "new.user@example.com",
-  "name": "New User",
-  "role": "agent",
-  "permission": "read_write",
-  "phone": "+441234567899",
-  "address": "Optional address",
-  "is_verified": false,
-  "is_active": true,
-  "is_staff": false
-}
-
-Validation errors (400 Bad Request)
-- Missing required fields (example):
-Status: 400
-Body:
-{
-  "email": "This field is required.",
-  "name": "This field is required.",
-  "phone": "This field is required.",
-  "role": "This field is required.",
-  "permission": "This field is required.",
-  "password": "This field is required."
-}
-
-- Duplicate email (example):
-Status: 400
-Body:
-{
-  "email": ["A user with that email already exists."]
-}
-
-Permission errors
-- 403 Forbidden if non-admin attempts this request.
-
-Notes
-- The serializer uses `create_user` from the model manager so the password is properly hashed. The API will never return the `password` field.
-
----
-
-## 3) Admin: Retrieve a single user
-- Endpoint: GET /api/admin/users/{id}/
-- Permission: Admin only (`IsAdmin`)
-
-Request example
-- GET /api/admin/users/42/
-- Headers: Authorization: Bearer <ADMIN_TOKEN>
-
-Response (200 OK)
-{
-  "id": 42,
-  "email": "new.user@example.com",
-  "name": "New User",
-  "role": "agent",
-  "permission": "read_write",
-  "phone": "+441234567899",
-  "address": "Optional address",
-  "is_verified": false,
-  "is_active": true,
-  "is_staff": false
-}
-
-Errors
-- 404 Not Found if id does not exist
-- 403 Forbidden if non-admin
-
----
-
-## 4) Admin: Update a user
-- Endpoint (full update): PUT /api/admin/users/{id}/
-- Endpoint (partial update): PATCH /api/admin/users/{id}/
-- Permission: Admin only (`IsAdmin`)
-- Behavior: `password` is optional on update; if provided it will be used to set the new password via `set_password`.
-
-Request (PATCH) example — change name and phone only
-PATCH /api/admin/users/42/
-{
-  "name": "Updated Name",
-  "phone": "+441234567900"
-}
-
-Success response (200 OK) — updated user object (same fields as above)
-
-Validation error examples (400)
-- Duplicate email when changing email to one already used by another user
-  {
-    "email": ["A user with that email already exists."]
-  }
-
----
-
-## 5) Admin: Delete a user
-- Endpoint: DELETE /api/admin/users/{id}/
-- Permission: Admin only (`IsAdmin`)
-- Response: 204 No Content on success
-
-Notes: This Delete uses DRF's `RetrieveUpdateDestroyAPIView` and will attempt to delete the user object from the DB. If the delete operation raises a DB OperationalError due to related constraints, admin may instead use the special anonymize fallback (see next endpoint) though that fallback is implemented on `DELETE /api/auth/users/{id}/`.
-
-Errors
-- 404 Not Found if user doesn't exist
-- 403 Forbidden if not admin/staff
-
----
-
-## 6) Auth-path: Delete user (special-case)
-- Endpoint: DELETE /api/auth/users/{id}/
-- Permission: Requires authentication. The view logic permits deletion if the requester is:
-  - staff (is_staff == True) OR
-  - role == 'admin' OR
-  - deleting their own account (requester.pk == target.pk)
-- Response on success: 204 No Content
-
-Behavior details (implemented in `UserDeleteView`)
-- If the authenticated user is permitted, the view attempts to `target.delete()`.
-- If the DB raises an OperationalError during delete (e.g., cascade constraints or DB-level locks), the view falls back to anonymize the user:
-  - `email` -> `deleted_user_<pk>@example.invalid`
-  - `name` -> `[deleted]`
-  - `is_active` -> False
-  - The view then saves the user and returns 204.
-
-Example success responses
-- Deletion: Status 204 No Content (empty body)
-
-Permission error (403)
-Status: 403 Forbidden
-Body:
-{
-  "detail": "You do not have permission to perform this action."
-}
-
----
-
-## 7) Registration & Auth endpoints (provided by dj-rest-auth)
-The `accounts` app includes the `dj_rest_auth` and `dj_rest_auth.registration` URL sets at the paths `auth/` and `registration/` respectively. Common endpoints available (subject to project configuration) include:
-
-Auth (under `/api/auth/`):
-- POST /api/auth/login/ — login with credentials (returns user/session/token depending on config)
-  Request: { "email": "...", "password": "..." }
-  Success: 200 OK (body depends on dj-rest-auth settings; typically returns user details and possibly token)
-- POST /api/auth/logout/ — logout (server-side session/token invalidation)
-- GET /api/auth/user/ — get currently authenticated user (uses `CustomUserDetailsSerializer` in this project)
-  Response sample:
-  {
-    "pk": 12,
-    "id": 12,
-    "email": "alice@example.com",
-    "name": "Alice Smith",
-    "role": "manager",
-    "permission": "read_write",
-    "is_verified": false,
-    "phone": "+441234567890",
-    "address": "123 Example St",
-    "date_joined": "2025-01-01T12:00:00Z",
-    "is_active": true,
-    "is_staff": false
-  }
-- Password change/reset endpoints (typical paths):
-  - POST /api/auth/password/change/
-  - POST /api/auth/password/reset/
-  - POST /api/auth/password/reset/confirm/
-
-Registration (under `/api/registration/`):
-- POST /api/registration/ — register a new user
-  The project provides `CustomRegisterSerializer` which requires `email` and `name`, and optionally `phone`.
-
-Registration request example
-POST /api/registration/
-{
-  "email": "new.user@example.com",
-  "name": "New User",
-  "phone": "+441234567899",
-  "password1": "StrongP@ssw0rd",
-  "password2": "StrongP@ssw0rd"
-}
-
-Notes about registration
-- `CustomRegisterSerializer` removes `username` and intentionally prevents clients from assigning `role` or `permission` during registration. Roles/permissions must be assigned by an admin via the admin endpoints.
-- The serializer also validates that an email already verified via `allauth` will be rejected.
-- Response shape after successful registration depends on `dj-rest-auth` settings (it may return the user object, user + token, or trigger an email verification flow).
-
-Common registration errors (400)
-- Password mismatch
-  { "password2": ["The two password fields didn't match."] }
-- Email already exists
-  { "email": ["This email is already in use."] }
-
----
-
-## Frontend integration checklist (quick)
-- Always send authentication credentials (Authorization header or cookies) with admin requests.
-- For create user: include required fields in the body: `email`, `name`, `phone`, `role`, `permission`, `password`.
-- For update: `password` is optional. Only include it when changing a password.
-- For delete via `/api/auth/users/{id}/`: expect 204 on success; if you see the user still in lists, the backend may have anonymized instead of deleting due to DB constraints.
-- Handle error responses:
-  - 400: show field-specific validation errors
-  - 401: redirect to login
-  - 403: show 'insufficient permissions' UI
-  - 404: show 'not found'
-
----
-
-## Examples (fetch) — create user (admin)
-Example using fetch with Bearer token (replace host and token):
-```js
-fetch('https://your.api.host/api/admin/users/', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer <ADMIN_TOKEN>'
-  },
-  body: JSON.stringify({
-    email: 'new.user@example.com',
-    name: 'New User',
-    phone: '+441234567899',
-    role: 'agent',
-    permission: 'read_write',
-    password: 'StrongP@ssw0rd'
-  })
-})
-.then(res => {
-  if (!res.ok) return res.json().then(err => Promise.reject(err));
-  return res.json();
-})
-.then(data => console.log('created', data))
-.catch(err => console.error('error', err));
-```
-
----
-
-## Backend notes / assumptions (for maintainers)
-- The `AdminUserSerializer` enforces required fields on create: `email`, `name`, `phone`, `role`, `permission`, `password`.
-- The delete fallback (anonymization) is implemented only on `DELETE /api/auth/users/{id}/`. The admin `DELETE /api/admin/users/{id}/` uses the default DRF destroy from `RetrieveUpdateDestroyAPIView` and may surface DB errors instead of anonymizing.
-
-If you want, I can:
-- Add concrete curl examples for every endpoint in this doc.
-- Generate Postman / OpenAPI snippets for automatic import in the frontend team.
-- Add integration test examples (pytest/django) for the admin endpoints.
-
--- end
