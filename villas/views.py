@@ -67,22 +67,26 @@ class PropertyViewSet(viewsets.ModelViewSet):
                 self.perform_create(property_serializer)
                 property_instance = property_serializer.instance
 
-                property_images = request.FILES.getlist('property_images')
+                media_images = request.FILES.getlist('media_images')
+
+                if not media_images:
+                    return Response({"error": "At least one media image is required."}, status=status.HTTP_400_BAD_REQUEST)
 
                 # Only save images that are not empty to avoid validation errors
-                for img in property_images:
+                for img in media_images:
                     if not img:
                         continue
-                    # ensure it's an uploaded file with a name and non-zero size
                     if hasattr(img, 'name') and getattr(img, 'size', None) and img.size > 0:
-                        PropertyImage.objects.create(listing=property_instance, image=img)
+                        PropertyImage.objects.create(property=property_instance, image=img)
 
-                bedroom_images = request.FILES.getlist('bedroom_images')
-                for img in bedroom_images:
+                bedrooms_images = request.FILES.getlist('bedrooms_images')
+                
+                for img in bedrooms_images:
                     if not img:
+                        print("Skipped empty bedroom image file.")
                         continue
                     if hasattr(img, 'name') and getattr(img, 'size', None) and img.size > 0:
-                        BedroomImage.objects.create(listing=property_instance, image=img)
+                        BedroomImage.objects.create(property=property_instance, image=img)
                 
         except serializers.ValidationError as e:
             return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
