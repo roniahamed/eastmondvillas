@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Property, Media, Booking, PropertyImage, BedroomImage
+from .models import Property, Media, Booking, PropertyImage, BedroomImage, Review, ReviewImage, Favorite
 from accounts.models import User
 from datetime import date, datetime
 from . import google_calendar_service
@@ -159,6 +159,31 @@ class BookingSerializer(serializers.ModelSerializer):
         return data
 
 
+class ReviewImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReviewImage
+        fields = ['id', 'image']
+
+class ReviewSerializer(serializers.ModelSerializer):
+    images = ReviewImageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ['id', 'property', 'user', 'rating', 'comment', 'created_at', 'images']
+        read_only_fields = ['user', 'created_at', 'images']
+
+    def validate_rating(self, value):
+        if not (1 <= value <= 5):
+            raise serializers.ValidationError("Rating must be between 1 and 5.")
+        return value
+
+    def validate(self, data):
+        property = data.get('property')
+        user = self.context['request'].user
+
+        if Review.objects.filter(property=property, user=user).exists():
+            raise serializers.ValidationError("You have already reviewed this property.")
+        return data
 
 
 
