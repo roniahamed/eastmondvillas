@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     # local apps
     'accounts',
     'villas',
+    'list_vila',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
