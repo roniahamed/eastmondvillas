@@ -42,11 +42,7 @@ coverage.xml
 *.cover
 *.py,cover
 
-# DRF specific
-*.migrations/
-*/migrations/
-*/migrations/*.pyc
-*/migrations/*.py
+
 
 # Environment variables
 .env
