@@ -21,7 +21,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
     def validate_property(self, value):
         user = self.context['request'].user
-        if Favorite.objects.filter(property=value, user=user).exists():
+        if Favorite.objects.select_related('property', 'user').filter(property=value, user=user).exists():
             raise serializers.ValidationError("This property is already in your favorites.")
         return value
 
