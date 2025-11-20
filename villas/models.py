@@ -238,3 +238,24 @@ class PropertyImage(models.Model):
 class BedroomImage(models.Model):
     property = models.ForeignKey("Property", on_delete=models.CASCADE, related_name="bedrooms_images")
     image = models.ImageField(upload_to="properties/bedrooms/")
+
+
+class Review(models.Model):
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='reviews')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviews')
+    rating = models.PositiveIntegerField()
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Review {self.id} - {self.property.title} ({self.rating} stars)"
+    
+
+class ReviewImage(models.Model):
+    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='review_images/')
+
+
