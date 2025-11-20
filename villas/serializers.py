@@ -5,19 +5,26 @@ from datetime import date, datetime
 from . import google_calendar_service
 
 
+
+class PropertyMiniSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Property
+        fields = ['id', 'title', 'city', 'price', 'bedrooms', 'bathrooms', 'pool', 'outdoor_amenities', 'interior_amenities']
+
+
 class FavoriteSerializer(serializers.ModelSerializer):
+    property_details = PropertyMiniSerializer(source='property', read_only=True)
     class Meta:
         model = Favorite
-        fields = ['id', 'property', 'user', 'created_at']
-        read_only_fields = ['user', 'created_at']
+        fields = ['id', 'property', 'user', 'created_at', 'property_details']
+        read_only_fields = ['user', 'created_at', 'property_details']
 
-    def validate(self, data):
-        property = data.get('property')
+    def validate_property(self, value):
         user = self.context['request'].user
-
-        if Favorite.objects.filter(property=property, user=user).exists():
+        if Favorite.objects.filter(property=value, user=user).exists():
             raise serializers.ValidationError("This property is already in your favorites.")
-        return data
+        return value
+
 
 
 
