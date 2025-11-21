@@ -233,38 +233,38 @@ class FavoriteViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Favorite.objects.filter(user=self.request.user).select_related('property')
+        return Favorite.objects.filter(
+            user=self.request.user
+        ).select_related('property')
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-    
-    @action(detail=False, methods=['delete'])
-    def remove(self, request):
-        property_id = request.query_params.get('property_id')
+    @action(detail=False, methods=['post'])
+    def toggle(self, request):
+        property_id = request.data.get("property")
 
         if not property_id:
-            return Response({"detail": "property_id is required"}, status=400)
-        
-        if not property_id.isdigit():
-            return Response({"detail": "property_id must be an integer"}, status=400)
+            return Response({"detail": "property is required"}, status=400)
 
-        favorite = Favorite.objects.filter(
-            user=request.user,
-            property_id=property_id
-        ).first()
+        user = request.user
 
-        if not favorite:
-            return Response({"detail": "Favorite not found"}, status=404)
+        favorite = Favorite.objects.filter(user=user, property_id=property_id).first()
 
-        favorite.delete()
-        return Response({"detail": "Removed from favorites"}, status=200)
+        if favorite:
+            favorite.delete()
+            return Response(
+                {"detail": "Removed from favorites", "is_favorited": False},
+                status=200
+            )
+
+        new_fav = Favorite.objects.create(user=user, property_id=property_id)
+        return Response(
+            {
+                "detail": "Added to favorites",
+                "is_favorited": True,
+                "data": FavoriteSerializer(new_fav).data
+            },
+            status=201
+        )
+
 
 
 
