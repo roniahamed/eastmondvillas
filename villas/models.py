@@ -290,3 +290,4 @@ class DailyAnalytics(models.Model):
         ordering = ['-date']
 
 
+
