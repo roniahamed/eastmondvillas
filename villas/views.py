@@ -282,6 +282,11 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class FavoriteViewSet(viewsets.ModelViewSet):
     serializer_class = FavoriteSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['property__id']
+    search_fields = ['property__title', 'property__city']
+    ordering_fields = ['created_at']
 
     def get_queryset(self):
         return Favorite.objects.filter(
