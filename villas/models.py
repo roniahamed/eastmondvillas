@@ -67,8 +67,8 @@ class Property(models.Model):
     # google  
     google_calendar_id = models.CharField(max_length=255, blank=True, null=True, help_text="The ID of the Google Calendar for this property.")
 
-    check_in = models.TimeField(blank=True, null=True, help_text="Standard check-in time.")
-    check_out = models.TimeField(blank=True, null=True, help_text="Standard check-out time.")
+    check_in = models.CharField(blank=True, null=True, help_text="Standard check-in time.")
+    check_out = models.CharField(blank=True, null=True, help_text="Standard check-out time.")
 
     rules_and_etiquette = models.JSONField(blank=True, null=True, help_text="List of rules in JSON format, e.g., ['No smoking', 'No pets allowed']")
 
