@@ -94,10 +94,7 @@ class PropertySerializer(serializers.ModelSerializer):
         ]
     
     def get_is_favorited(self, obj):
-        user = self.context['request'].user
-        if user.is_authenticated:
-            return any(fav.user_id == user.id for fav in obj.favorited_by.all())
-        return False
+        return getattr(obj, "is_favorited", False)
 
     def get_created_by_name(self, obj):
         return obj.created_by.name if obj.created_by else None
