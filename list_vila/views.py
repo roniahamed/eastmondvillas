@@ -4,6 +4,7 @@ from rest_framework import status, permissions, generics
 from django.shortcuts import get_object_or_404
 from .models import VilaListing,ContectUs
 from .serializers import VilaListingSerializer,ContectUsSerializer
+from notifications.utils import notify_admins_and_managers
 
 # Create your views here.
 
@@ -24,6 +25,7 @@ class vila_list(APIView):
         serializer = VilaListingSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
+            notify_admins_and_managers("New Vila Listing", data=serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -60,6 +62,9 @@ class ContactUsView(APIView):
         serializer = ContectUsSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
+
+            notify_admins_and_managers("New Contact Us", data=serializer.data)
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     

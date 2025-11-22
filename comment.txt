@@ -1,0 +1,3 @@
+
+# for run server use this command-
+        daphne -p 9000 eastmondvilla.asgi:application

@@ -59,18 +59,22 @@ INSTALLED_APPS = [
     'allauth.socialaccount',  # Required by allauth even without social providers
     # 'allauth.socialaccount.providers.google', 
     'drf_spectacular',
+    'channels',
+    'channels_redis',
 
 
     # local apps
     'accounts',
     'villas',
     'list_vila',
+    'notifications',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',  # Add this before CommonMiddleware
     'django.middleware.common.CommonMiddleware',
@@ -98,6 +102,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'eastmondvilla.wsgi.application'
+ASGI_APPLICATION = "eastmondvilla.asgi.application"
 
 
 # Database
@@ -288,3 +293,16 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@campaignai.co
 
 
 
+# Channels Configuration
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+
+
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
