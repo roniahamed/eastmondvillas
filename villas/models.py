@@ -208,13 +208,12 @@ class Media(models.Model):
 
 
 class Booking(models.Model):
-    STATUS = (
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
-    )
+    class STATUS(models.TextChoices):
+        Pending = 'pending'
+        Approved = 'approved'
+        Rejected = 'rejected'
+        Completed = 'completed'
+        Cancelled = 'cancelled'
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='bookings')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='bookings')
     full_name = models.CharField(max_length=255)
@@ -222,7 +221,7 @@ class Booking(models.Model):
     phone = models.CharField(max_length=30, blank=True)
     check_in = models.DateField()
     check_out = models.DateField()
-    status = models.CharField(max_length=20, choices=STATUS, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS.choices, default=STATUS.Pending)
     total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     google_event_id = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
