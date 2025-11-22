@@ -242,6 +242,11 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['property__id', 'rating', 'user__id']
+    search_fields = ['comment', 'property__title', 'user__username']
+    ordering_fields = ['rating', 'created_at']
 
     def get_queryset(self):
         user = self.request.user
