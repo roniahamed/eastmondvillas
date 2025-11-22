@@ -39,8 +39,8 @@ class PropertyViewSet(viewsets.ModelViewSet):
     pagination_class = StandardResultsSetPagination
     filter_backends = [SearchFilter, OrderingFilter]
     filterset_class = PropertyFilter
-    # search_fields = ['title', 'city', 'description', 'interior_amenities', 'outdoor_amenities']
-    # ordering_fields = ['price', 'created_at', 'bedrooms', 'bathrooms']
+    search_fields = ['^title', '^city', '^description', '^interior_amenities', '^outdoor_amenities']
+    ordering_fields = ['price', 'created_at', 'bedrooms', 'bathrooms']
     
 
     def get_queryset(self):
