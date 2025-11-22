@@ -67,6 +67,11 @@ class Property(models.Model):
     # google  
     google_calendar_id = models.CharField(max_length=255, blank=True, null=True, help_text="The ID of the Google Calendar for this property.")
 
+    check_in = models.DateField(blank=True, null=True, help_text="Standard check-in date.")
+    check_out = models.DateField(blank=True, null=True, help_text="Standard check-out date.")
+
+    rules_and_etiquette = models.JSONField(blank=True, null=True, help_text="List of rules in JSON format, e.g., ['No smoking', 'No pets allowed']")
+
 
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
