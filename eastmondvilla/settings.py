@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     'villas',
     'list_vila',
     'notifications',
+    'announcements',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
