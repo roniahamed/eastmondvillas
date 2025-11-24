@@ -20,6 +20,7 @@ from .serializers import PropertySerializer , BookingSerializer, MediaSerializer
 
 
 from accounts.permissions import IsAdminOrManager, IsAgentWithFullAccess, IsAssignedAgentReadOnly, IsOwnerOrAdminOrManager
+from rest_framework.permissions import IsAdminUser
 
 
 from rest_framework.pagination import PageNumberPagination
@@ -34,9 +35,10 @@ from .filters import PropertyFilter
 from datetime import datetime
 
 from django.db.models import Q
+from rest_framework.views import APIView
 
-
-
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 
 
@@ -387,3 +389,19 @@ class FavoriteViewSet(viewsets.ModelViewSet):
 
 
 
+class DeshboardViewApi(APIView):
+    permission_classes = [IsAdminUser]
+    def get(self, request):
+        properties = Property.objects.all().count()
+        properties_active = Property.objects.filter(status='active').count()
+        reviews = Review.objects.all().count()
+        users = User.objects.filter(role='agent').count()
+
+        return Response({
+            "properties": properties,
+            "properties_active": properties_active,
+            "reviews": reviews,
+            "users": users
+        },status=status.HTTP_200_OK)
+        
+        

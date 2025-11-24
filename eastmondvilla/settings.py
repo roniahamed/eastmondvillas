@@ -61,7 +61,7 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'channels',
     'channels_redis',
-    'django_filters',
+   
 
 
     # local apps
