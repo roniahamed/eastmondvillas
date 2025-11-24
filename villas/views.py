@@ -8,7 +8,7 @@ from rest_framework.decorators import api_view, permission_classes, action
 from datetime import datetime, timedelta
 from django.db.models import Exists, OuterRef
 
-from utils import update_daily_analytics
+from .utils import update_daily_analytics
 
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
@@ -194,12 +194,14 @@ class BookingViewSet(viewsets.ModelViewSet):
                 try:
                     event_id = google_calendar_service.create_event_for_booking(booking.property.google_calendar_id, booking)
                     booking.google_event_id = event_id
+                    booking.status = new_status
                     update_daily_analytics(booking.property, "bookings")
                 except Exception as e:
                     return Response({"error": f"Failed to create Google Calendar event: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             elif new_status in ['cancelled', 'rejected'] and booking.google_event_id:
                 google_calendar_service.delete_event_for_booking(booking.property.google_calendar_id, booking.google_event_id)
                 booking.google_event_id = None
+                booking.status = new_status
         
         booking.save() 
         
