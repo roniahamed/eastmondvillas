@@ -409,6 +409,181 @@ class DeshboardViewApi(APIView):
         },status=status.HTTP_200_OK)
         
 
+from django.db.models import Sum, Count, Q
+from django.utils.timezone import now
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from datetime import timedelta
+from .models import DailyAnalytics
+from list_vila.models import ContectUs
+from django.db.models.functions import TruncMonth
+
+
+class AnalyticsSummaryView(APIView):
+    """
+    Fully optimized analytics summary.
+    Supports:
+    - ?range=7d | month | 6m | year | 1y | custom days (e.g. range=90)
+    - or ?start=YYYY-MM-DD&end=YYYY-MM-DD
+    """
+
+    def get(self, request):
+        today = now().date()
+
+        start_param = request.GET.get("start")
+        end_param = request.GET.get("end")
+
+        if start_param and end_param:
+            try:
+                start_date = date.fromisoformat(start_param)
+                end_date = date.fromisoformat(end_param)
+            except:
+                return Response({"error": "Use YYYY-MM-DD for start & end"}, status=400)
+
+        else:
+
+            range_type = request.GET.get("range", "7d")
+
+            if range_type == "7d":
+                start_date = today - timedelta(days=7)
+            elif range_type == "month":
+                start_date = today.replace(day=1)
+            elif range_type == "6m":
+                start_date = today - timedelta(days=180)
+            elif range_type == "year":
+                start_date = today.replace(month=1, day=1)
+            elif range_type == "1y":
+                start_date = today - timedelta(days=365)
+            elif range_type.isdigit():
+                start_date = today - timedelta(days=int(range_type))
+            else:
+                start_date = today - timedelta(days=7)
+
+            end_date = today
+
+        analytics_qs = DailyAnalytics.objects.filter(
+            date__gte=start_date, date__lte=end_date
+        )
+
+        totals = analytics_qs.aggregate(
+            total_views=Sum("views"),
+            total_downloads=Sum("downloads"),
+            total_bookings=Sum("bookings")
+        )
+
+        total_inquiries = ContectUs.objects.filter(
+            created_at__date__gte=start_date,
+            created_at__date__lte=end_date
+        ).count()
+
+  
+        villas_type_count = dict(
+            Property.objects.values("listing_type")
+            .annotate(total=Count("id"))
+            .values_list("listing_type", "total")
+        )
+
+
+        monthly_stats = (
+            analytics_qs
+            .annotate(month=TruncMonth("date"))
+            .values("month")
+            .annotate(
+                views=Sum("views"),
+                downloads=Sum("downloads"),
+                bookings=Sum("bookings")
+            )
+            .order_by("month")
+        )
+
+
+        monthly_inquiries = (
+            ContectUs.objects.filter(
+                created_at__date__gte=start_date,
+                created_at__date__lte=end_date
+            )
+            .annotate(month=TruncMonth("created_at"))
+            .values("month")
+            .annotate(inquiries=Count("id"))
+            .order_by("month")
+        )
+
+        inquiry_map = {m["month"]: m["inquiries"] for m in monthly_inquiries}
+
+        performance_overview = []
+        for m in monthly_stats:
+            month = m["month"]
+            performance_overview.append({
+                "month": month.strftime("%Y-%m"),
+                "views": m["views"],
+                "downloads": m["downloads"],
+                "bookings": m["bookings"],
+                "inquiries": inquiry_map.get(month, 0),
+            })
+
+        agents_analytics = (
+            User.objects.filter(role="agent")
+            .annotate(
+                total_properties=Count("assigned_villas", distinct=True),
+                total_views=Sum("assigned_villas__daily_analytics__views"),
+                total_downloads=Sum("assigned_villas__daily_analytics__downloads"),
+                total_bookings=Sum("assigned_villas__daily_analytics__bookings"),
+            )
+            .values(
+                "id", "name", "total_properties",
+                "total_views", "total_downloads", "total_bookings"
+            )
+        )
+
+
+        return Response({
+            "start_date": start_date,
+            "end_date": end_date,
+
+            "totals": {
+                "views": totals["total_views"] or 0,
+                "downloads": totals["total_downloads"] or 0,
+                "bookings": totals["total_bookings"] or 0,
+                "inquiries": total_inquiries,
+            },
+
+            "villas_type_count": villas_type_count,
+
+            "monthly_performance": performance_overview,
+
+            "agents": list(agents_analytics),
+        })
+
+
+class AgentsAnalyticsListView(APIView):
+
+    def get(self, request):
+
+        agents_data = (
+            User.objects.filter(role="agent")
+            .annotate(
+                total_properties_added=Count("assigned_villas", distinct=True),
+                total_views=Sum("assigned_villas__daily_analytics__views"),
+                total_downloads=Sum("assigned_villas__daily_analytics__downloads"),
+                total_bookings=Sum("assigned_villas__daily_analytics__bookings"),
+            )
+        )
+
+        result = []
+        for agent in agents_data:
+            result.append({
+                "agent_id": agent.id,
+                "agent_name": agent.name,
+                "total_properties_added": agent.total_properties_added or 0,
+                "total_views": agent.total_views or 0,
+                "total_downloads": agent.total_downloads or 0,
+                "total_bookings": agent.total_bookings or 0,
+            })
+
+        return Response(result)
+
+
+
 
 auditlog.register(Property)
 auditlog.register(Media)
