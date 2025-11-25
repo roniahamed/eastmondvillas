@@ -57,3 +57,17 @@ class UserDeleteView(APIView):
             target.is_active = False
             target.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
+        
+
+from rest_framework_simplejwt.tokens import RefreshToken
+from datetime import timedelta
+
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+
+    return {
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+        "access_expires_in": refresh.access_token.lifetime.total_seconds(),
+        "refresh_expires_in": refresh.lifetime.total_seconds(),
+    }
