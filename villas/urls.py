@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import PropertyViewSet, BookingViewSet, get_property_availability, FavoriteViewSet, ReviewViewSet, property_downloaded, DeshboardViewApi, AnalyticsSummaryView, AgentsAnalyticsListView
+from .views import PropertyViewSet, BookingViewSet, get_property_availability, FavoriteViewSet, ReviewViewSet, property_downloaded, DeshboardViewApi, AnalyticsSummaryView
 
 
 router = DefaultRouter()
@@ -17,5 +17,4 @@ urlpatterns = [
     path('properties/<int:property_pk>/availability/', get_property_availability, name='property-availability'),
     path('properties/<int:pk>/downloaded/', property_downloaded, name='property-downloaded'),
     path("analytics/", AnalyticsSummaryView.as_view()),
-    path("analytics/agents/", AgentsAnalyticsListView.as_view()),
 ]
