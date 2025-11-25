@@ -246,6 +246,7 @@ REST_AUTH = {
     # Provide custom serializer for the user details endpoint so `/api/auth/user/`
     # returns the project's User fields (id/email/name/phone/role/permission/etc.).
     'USER_DETAILS_SERIALIZER': 'accounts.serializers.CustomUserDetailsSerializer',
+    "LOGIN_SERIALIZER": "accounts.serializers.CustomLoginSerializer",
 }
 
 
