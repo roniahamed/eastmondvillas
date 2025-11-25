@@ -1,6 +1,6 @@
 from django.db import transaction
 import json
-from rest_framework import viewsets, status, serializers
+from rest_framework import viewsets, status, serializers, filters
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -21,6 +21,7 @@ from .serializers import PropertySerializer , BookingSerializer, MediaSerializer
 
 
 from accounts.permissions import IsAdminOrManager, IsAgentWithFullAccess, IsAssignedAgentReadOnly, IsOwnerOrAdminOrManager
+from rest_framework.permissions import IsAdminUser
 
 
 from rest_framework.pagination import PageNumberPagination
@@ -32,6 +33,21 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 
 from .filters import PropertyFilter
+from datetime import datetime
+
+from django.db.models import Q
+from rest_framework.views import APIView
+
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
+
+
+
+
+
+
+
 
 # Property ViewSet
 
@@ -135,6 +151,7 @@ class PropertyViewSet(viewsets.ModelViewSet):
         final_serializer = self.get_serializer(property_instance)
         headers = self.get_success_headers(final_serializer.data)
         return Response(final_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
 
 def property_downloaded(request, pk):
     try:
@@ -146,6 +163,7 @@ def property_downloaded(request, pk):
     return Response({"detail": "Download recorded."}, status=status.HTTP_200_OK) 
 
 class BookingViewSet(viewsets.ModelViewSet):
+   
     serializer_class = BookingSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ['status', 'property__id', 'user__id']
@@ -154,14 +172,50 @@ class BookingViewSet(viewsets.ModelViewSet):
     pagination_class = StandardResultsSetPagination
 
 
+    # optional: you can leave this out; we override filter_queryset anyway
+    # filter_backends = []
+
     def get_queryset(self):
         user = self.request.user
+
         if not user.is_authenticated:
-            return Booking.objects.none()
-        if user.role in ['admin', 'manager']:
-            return Booking.objects.all().select_related('property', 'user')
-        return Booking.objects.filter(user=user).select_related('property', 'user')
-    
+            queryset = Booking.objects.none()
+        elif getattr(user, "role", None) in ["admin", "manager"]:
+            queryset = Booking.objects.all().select_related("property", "user")
+        else:
+            queryset = Booking.objects.filter(user=user).select_related("property", "user")
+
+        return queryset
+
+    def filter_queryset(self, queryset):
+        """
+        Completely bypass DRF's DEFAULT_FILTER_BACKENDS (SearchFilter, etc.)
+        and implement our own ?search= logic.
+        """
+        search = self.request.query_params.get("search")
+        if not search:
+            return queryset
+
+        # Try to parse search as date YYYY-MM-DD
+        date_value = None
+        try:
+            date_value = datetime.strptime(search, "%Y-%m-%d").date()
+        except ValueError:
+            pass
+
+        # Text search
+        q = (
+            Q(full_name__icontains=search) |
+            Q(email__icontains=search) |
+            Q(phone__icontains=search)
+        )
+
+        # If looks like a date, include check_in / check_out
+        if date_value:
+            q |= Q(check_in=date_value) | Q(check_out=date_value)
+
+        return queryset.filter(q)
+
     def get_permissions(self):
         if self.action == 'create':
             permission_classes = [IsAuthenticated]
@@ -169,7 +223,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             permission_classes = [IsOwnerOrAdminOrManager]
         elif self.action in ['update', 'partial_update', 'destroy']:
             permission_classes = [IsAdminOrManager]
-        else: # list action
+        else:  # list action
             permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]
     
@@ -339,3 +393,19 @@ class FavoriteViewSet(viewsets.ModelViewSet):
 
 
 
+class DeshboardViewApi(APIView):
+    permission_classes = [IsAdminUser]
+    def get(self, request):
+        properties = Property.objects.all().count()
+        properties_active = Property.objects.filter(status='active').count()
+        reviews = Review.objects.all().count()
+        users = User.objects.filter(role='agent').count()
+
+        return Response({
+            "properties": properties,
+            "properties_active": properties_active,
+            "reviews": reviews,
+            "users": users
+        },status=status.HTTP_200_OK)
+        
+        
