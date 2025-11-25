@@ -3,6 +3,7 @@ from .models import Property, Media, Booking, PropertyImage, BedroomImage, Revie
 from accounts.models import User
 from datetime import date, datetime
 from .utils import validate_date_range, is_valid_date
+from django.db.models import Avg, Count
 
 
 
@@ -71,6 +72,9 @@ class PropertySerializer(serializers.ModelSerializer):
     bedrooms_images = BedroomImageSerializer(many=True, read_only=True)
     is_favorited = serializers.SerializerMethodField()
 
+    total_reviews = serializers.SerializerMethodField()
+    average_rating = serializers.SerializerMethodField()
+
 
     class Meta:
         model = Property
@@ -81,13 +85,19 @@ class PropertySerializer(serializers.ModelSerializer):
             'longitude', 'place_id', 'seo_title', 'seo_description',
             'signature_distinctions', 'staff', 'calendar_link',
             'created_at', 'updated_at', 'assigned_agent', 'created_by', 'created_by_name',
-            'booking_count', 'location_coords', 'property_stats', 'media_images', 'bedrooms_images', 'is_favorited', 'check_in', 'check_out', 'rules_and_etiquette'
+            'booking_count', 'location_coords', 'property_stats', 'media_images', 'bedrooms_images', 'is_favorited', 'check_in', 'check_out', 'rules_and_etiquette', 'total_reviews', 'average_rating'
         ]
         read_only_fields = [
             'slug', 'created_by', 'created_by_name', 'booking_count', 'media_images', 'bedrooms_images',
-            'created_at', 'updated_at', 'location_coords', 'price_display', 'property_stats'
+            'created_at', 'updated_at', 'location_coords', 'price_display', 'property_stats', 'total_reviews', 'average_rating'
         ]
     
+    def get_total_reviews(self, obj):
+        return getattr(obj, "total_reviews", 0)
+
+    def get_average_rating(self, obj):
+        return round(getattr(obj, "avg_rating", 0) or 0, 2)
+
     def get_is_favorited(self, obj):
         return getattr(obj, "is_favorited", False)
 
