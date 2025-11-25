@@ -118,3 +118,19 @@ class AdminUserSerializer(serializers.ModelSerializer):
             instance.set_password(password)
         instance.save()
         return instance
+
+
+from dj_rest_auth.serializers import LoginSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
+
+class CustomLoginSerializer(LoginSerializer):
+
+    def get_response_data(self):
+        data = super().get_response_data()
+
+        # Token lifetime যোগ করা
+        refresh = RefreshToken(self.token)
+        data["access_expires_in"] = refresh.access_token.lifetime.total_seconds()
+        data["refresh_expires_in"] = refresh.lifetime.total_seconds()
+
+        return data
