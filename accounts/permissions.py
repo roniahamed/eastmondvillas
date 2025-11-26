@@ -55,3 +55,21 @@ class IsOwnerOrAdminOrManager(BasePermission):
             return True
         
         return obj.user == request.user
+    
+class IsAgentOrAdminOrManager(BasePermission):
+    """
+    Custom permission to allow users with 'agent', 'admin', or 'manager' roles access.
+    Assumes the User model has a 'role' attribute.
+    """
+
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role in ['agent', 'admin', 'manager']
+    
+class IsAgent(BasePermission):
+    """
+    Custom permission to only allow users with 'agent' role to access the view.
+    Assumes the User model has a 'role' attribute.
+    """
+
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and getattr(request.user, 'role', None) == 'agent'
