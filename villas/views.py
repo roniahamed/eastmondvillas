@@ -20,7 +20,7 @@ from .models import Property, Media, Booking, PropertyImage, BedroomImage, Revie
 from .serializers import PropertySerializer , BookingSerializer, MediaSerializer, PropertyImageSerializer, BedroomImageSerializer, ReviewSerializer, ReviewImageSerializer, FavoriteSerializer
 
 
-from accounts.permissions import IsAdminOrManager, IsAgentWithFullAccess, IsAssignedAgentReadOnly, IsOwnerOrAdminOrManager
+from accounts.permissions import IsAdminOrManager, IsAgentWithFullAccess, IsAgent, IsOwnerOrAdminOrManager
 from rest_framework.permissions import IsAdminUser
 
 
@@ -727,6 +727,62 @@ class AnalyticsSummaryView(APIView):
             "agents": list(agents),
         })
 
+from django.db.models import Subquery
+from rest_framework import generics
+from .serializers import AgentOptimizedSerializer
+
+
+class AgentSummaryListView(generics.ListAPIView):
+    serializer_class = AgentOptimizedSerializer
+    permission_classes = [IsAgent]
+
+
+    def get_queryset(self):
+        today = timezone.now().date()
+        first_day = today.replace(day=1)
+
+        user_email = self.request.user.email
+
+        monthly_downloads = DailyAnalytics.objects.filter(
+            property__assigned_agent=OuterRef("pk"),
+            date__gte=first_day,
+        ).values('property__assigned_agent') \
+         .annotate(total=Sum('downloads')) \
+         .values('total')
+
+        return (
+            User.objects.filter(role="agent", email=user_email)
+            .annotate(
+                assigned_properties=Count('assigned_villas', distinct=True),
+                active_listings=Count(
+                    'assigned_villas',
+                    filter=Q(assigned_villas__status="published"),
+                    distinct=True,
+                ),
+                downloads_this_month=Subquery(monthly_downloads[:1]),
+            )
+            .prefetch_related("assigned_villas")
+        )
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        if not queryset.exists():
+            empty_data = {
+                "id": request.user.id, 
+                "name": request.user.name,
+                "email": request.user.email,
+                "date_joined": request.user.date_joined,
+                "assigned_properties": 0,
+                "active_listings": 0,
+                "downloads_this_month": 0,
+                "scheduled_viewings": 0,
+            }
+            return Response(empty_data)
+
+        # Normal response with serializer
+        serializer = self.get_serializer(queryset.first())
+        return Response(serializer.data)
 
 auditlog.register(Property)
 auditlog.register(Media)
