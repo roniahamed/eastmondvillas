@@ -14,7 +14,7 @@ class CustomUserDetailsSerializer(UserDetailsSerializer):
     class Meta(UserDetailsSerializer.Meta):
         model = User 
         # Include pk (alias to id) and the project-specific fields consumers expect.
-        fields = ('pk', 'id', 'email', 'name', 'role', 'permission', 'is_verified', 'phone', 'address', 'date_joined', 'is_active', 'is_staff')
+        fields = ('pk', 'id', 'email', 'name', 'role', 'permission', 'is_verified', 'phone', 'address', 'date_joined', 'is_active', 'is_staff', 'image')
 
 class CustomRegisterSerializer(RegisterSerializer):
     username = None
@@ -72,7 +72,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             'id', 'email', 'name', 'role', 'permission', 'phone', 'address',
-            'is_verified', 'is_active', 'is_staff', 'password',
+            'is_verified', 'is_active', 'is_staff', 'password', 'date_joined', 'image'
         )
         read_only_fields = ('is_verified',)
 
@@ -134,3 +134,16 @@ class CustomLoginSerializer(LoginSerializer):
         data["refresh_expires_in"] = refresh.lifetime.total_seconds()
 
         return data
+
+# accounts/serializers.py
+
+class UserUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['name', 'image', 'phone', 'address'] 
+        read_only_fields = ['email'] 
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
