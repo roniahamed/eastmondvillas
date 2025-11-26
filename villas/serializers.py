@@ -272,3 +272,24 @@ class DailyAnalyticsSerializer(serializers.ModelSerializer):
         return data
 
         
+class AgentOptimizedSerializer(serializers.ModelSerializer):
+    assigned_properties = serializers.IntegerField()
+    active_listings = serializers.IntegerField()
+    downloads_this_month = serializers.IntegerField()
+    scheduled_viewings = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "name",
+            "email",
+            "date_joined",
+            "assigned_properties",
+            "active_listings",
+            "downloads_this_month",
+            "scheduled_viewings",
+        ]
+
+    def get_scheduled_viewings(self, obj):
+        return 0  # placeholder until you add viewing model
