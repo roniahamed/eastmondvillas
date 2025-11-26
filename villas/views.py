@@ -26,6 +26,11 @@ from rest_framework.permissions import IsAdminUser
 
 from rest_framework.pagination import PageNumberPagination
 
+from django.utils.timezone import now
+from .models import DailyAnalytics
+from list_vila.models import ContectUs
+from django.db.models.functions import TruncMonth, TruncDay
+
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 20
     page_size_query_param = 'page_size'
@@ -39,13 +44,6 @@ from rest_framework.views import APIView
 
 from django.contrib.auth import get_user_model
 User = get_user_model()
-
-
-
-
-
-
-
 
 
 # Property ViewSet
@@ -410,157 +408,6 @@ class DeshboardViewApi(APIView):
         },status=status.HTTP_200_OK)
         
 
-from django.db.models import Sum, Count, Q
-from django.utils.timezone import now
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from datetime import timedelta
-from .models import DailyAnalytics
-from list_vila.models import ContectUs
-from django.db.models.functions import TruncMonth
-
-
-# class AnalyticsSummaryView(APIView):
-#     """
-#     Fully optimized analytics summary.
-#     Supports:
-#     - ?range=7d | month | 6m | year | 1y | custom days (e.g. range=90)
-#     - or ?start=YYYY-MM-DD&end=YYYY-MM-DD
-#     """
-
-#     def get(self, request):
-#         today = now().date()
-
-#         start_param = request.GET.get("start")
-#         end_param = request.GET.get("end")
-
-#         if start_param and end_param:
-#             try:
-#                 start_date = date.fromisoformat(start_param)
-#                 end_date = date.fromisoformat(end_param)
-#             except:
-#                 return Response({"error": "Use YYYY-MM-DD for start & end"}, status=400)
-
-#         else:
-
-#             range_type = request.GET.get("range", "7d")
-
-#             if range_type == "7d":
-#                 start_date = today - timedelta(days=7)
-#             elif range_type == "month":
-#                 start_date = today.replace(day=1)
-#             elif range_type == "6m":
-#                 start_date = today - timedelta(days=180)
-#             elif range_type == "year":
-#                 start_date = today.replace(month=1, day=1)
-#             elif range_type == "1y":
-#                 start_date = today - timedelta(days=365)
-#             elif range_type.isdigit():
-#                 start_date = today - timedelta(days=int(range_type))
-#             else:
-#                 start_date = today - timedelta(days=7)
-
-#             end_date = today
-
-#         analytics_qs = DailyAnalytics.objects.filter(
-#             date__gte=start_date, date__lte=end_date
-#         )
-
-#         totals = analytics_qs.aggregate(
-#             total_views=Sum("views"),
-#             total_downloads=Sum("downloads"),
-#             total_bookings=Sum("bookings")
-#         )
-
-#         total_inquiries = ContectUs.objects.filter(
-#             created_at__date__gte=start_date,
-#             created_at__date__lte=end_date
-#         ).count()
-
-  
-#         villas_type_count = dict(
-#             Property.objects.values("listing_type")
-#             .annotate(total=Count("id"))
-#             .values_list("listing_type", "total")
-#         )
-
-
-#         monthly_stats = (
-#             analytics_qs
-#             .annotate(month=TruncMonth("date"))
-#             .values("month")
-#             .annotate(
-#                 views=Sum("views"),
-#                 downloads=Sum("downloads"),
-#                 bookings=Sum("bookings")
-#             )
-#             .order_by("month")
-#         )
-
-
-#         monthly_inquiries = (
-#             ContectUs.objects.filter(
-#                 created_at__date__gte=start_date,
-#                 created_at__date__lte=end_date
-#             )
-#             .annotate(month=TruncMonth("created_at"))
-#             .values("month")
-#             .annotate(inquiries=Count("id"))
-#             .order_by("month")
-#         )
-
-#         inquiry_map = {m["month"]: m["inquiries"] for m in monthly_inquiries}
-
-#         performance_overview = []
-#         for m in monthly_stats:
-#             month = m["month"]
-#             performance_overview.append({
-#                 "month": month.strftime("%Y-%m"),
-#                 "views": m["views"],
-#                 "downloads": m["downloads"],
-#                 "bookings": m["bookings"],
-#                 "inquiries": inquiry_map.get(month, 0),
-#             })
-
-#         agents_analytics = (
-#             User.objects.filter(role="agent")
-#             .annotate(
-#                 total_properties=Count("assigned_villas", distinct=True),
-#                 total_views=Sum("assigned_villas__daily_analytics__views"),
-#                 total_downloads=Sum("assigned_villas__daily_analytics__downloads"),
-#                 total_bookings=Sum("assigned_villas__daily_analytics__bookings"),
-#             )
-#             .values(
-#                 "id", "name", "total_properties",
-#                 "total_views", "total_downloads", "total_bookings"
-#             )
-#         )
-
-
-#         return Response({
-#             "start_date": start_date,
-#             "end_date": end_date,
-
-#             "totals": {
-#                 "views": totals["total_views"] or 0,
-#                 "downloads": totals["total_downloads"] or 0,
-#                 "bookings": totals["total_bookings"] or 0,
-#                 "inquiries": total_inquiries,
-#             },
-
-#             "villas_type_count": villas_type_count,
-
-#             "monthly_performance": performance_overview,
-
-#             "agents": list(agents_analytics),
-#         })
-
-from django.db.models import Sum, Count
-from django.db.models.functions import TruncDay, TruncMonth
-from datetime import date, timedelta
-from django.utils.timezone import now
-from rest_framework.views import APIView
-from rest_framework.response import Response
 
 
 class AnalyticsSummaryView(APIView):
@@ -783,6 +630,105 @@ class AgentSummaryListView(generics.ListAPIView):
         # Normal response with serializer
         serializer = self.get_serializer(queryset.first())
         return Response(serializer.data)
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django.db.models import Prefetch
+from datetime import datetime
+
+
+def validate_month_year(month, year):
+    """ Strong validation for month & year """
+    try:
+        month = int(month)
+        year = int(year)
+    except:
+        return False, "month and year must be integers"
+
+    if month < 1 or month > 12:
+        return False, "month must be between 1 and 12"
+
+    current_year = datetime.now().year
+    if year < 1900 or year > current_year:
+        return False, f"year must be between 1900 and {current_year}"
+
+    return True, (month, year)
+
+
+
+class AgentMonthlyBookingView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        # -------- extract query params --------
+        raw_month = request.query_params.get("month")
+        raw_year = request.query_params.get("year")
+
+        if not raw_month or not raw_year:
+            return Response(
+                {"error": "month & year required. Example: ?month=11&year=2025"},
+                status=400
+            )
+
+        # -------- strong month & year validation --------
+        is_valid, result = validate_month_year(raw_month, raw_year)
+        if not is_valid:
+            return Response({"error": result}, status=400)
+
+        month, year = result
+
+        # -------- prefetch monthly bookings (N+1 fixed) --------
+        monthly_bookings = Booking.objects.filter(
+            check_in__year=year,
+            check_in__month=month
+        ).order_by("-check_in")
+
+        properties = (
+            Property.objects
+            .filter(assigned_agent=user)
+            .select_related("assigned_agent")
+            .prefetch_related(
+                Prefetch("bookings", queryset=monthly_bookings, to_attr="monthly_bookings")
+            )
+        )
+
+        # -------- prepare response --------
+        data = []
+        for prop in properties:
+
+            booking_list = [
+                {
+                    "booking_id": b.id,
+                    "full_name": b.full_name,
+                    "check_in": b.check_in,
+                    "check_out": b.check_out,
+                    "status": b.status,
+                    "total_price": b.total_price,
+                }
+                for b in prop.monthly_bookings
+            ]
+
+            data.append({
+                "property_id": prop.id,
+                "property_title": prop.title,
+                "city": prop.city,
+                "total_bookings_this_month": len(prop.monthly_bookings),
+                "bookings": booking_list,
+            })
+
+        return Response({
+            "agent": user.id,
+            "month": month,
+            "year": year,
+            "properties_count": properties.count(),
+            "data": data
+        })
+
 
 auditlog.register(Property)
 auditlog.register(Media)
