@@ -685,7 +685,8 @@ class AgentMonthlyBookingView(APIView):
         # -------- prefetch monthly bookings (N+1 fixed) --------
         monthly_bookings = Booking.objects.filter(
             check_in__year=year,
-            check_in__month=month
+            check_in__month=month,
+             status=Booking.STATUS.Approved
         ).order_by("-check_in")
 
         properties = (
