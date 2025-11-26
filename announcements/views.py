@@ -6,7 +6,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from .models import Announcement, FileUpload
 from .serializers import AnnouncementSerializer
-from accounts.permissions import IsAdminOrManager
+from accounts.permissions import IsAdminOrManager, IsAgentOrAdminOrManager
 from notifications.utils import create_notification_for_customers
 
 
@@ -14,7 +14,7 @@ class AnnouncementListCreateAPIView(APIView):
     
     parser_classes = [MultiPartParser, FormParser]  
     
-    permission_classes = [IsAdminOrManager] 
+    permission_classes = [IsAdminOrManager, IsAgentOrAdminOrManager] 
     
     def get(self, request):
         announcements = Announcement.objects.all().order_by('-created_at')
