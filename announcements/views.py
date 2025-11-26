@@ -14,7 +14,7 @@ class AnnouncementListCreateAPIView(APIView):
     
     parser_classes = [MultiPartParser, FormParser]  
     
-    permission_classes = [IsAdminOrManager, IsAgentOrAdminOrManager] 
+    permission_classes = [IsAgentOrAdminOrManager] 
     
     def get(self, request):
         announcements = Announcement.objects.all().order_by('-created_at')

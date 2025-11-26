@@ -61,9 +61,12 @@ class IsAgentOrAdminOrManager(BasePermission):
     Custom permission to allow users with 'agent', 'admin', or 'manager' roles access.
     Assumes the User model has a 'role' attribute.
     """
+    message = "You do not have permission to access this resource."
 
     def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.role in ['agent', 'admin', 'manager']
+        if request.user and request.user.is_authenticated and request.user.role in ['agent', 'admin', 'manager']:
+            return True
+        return False 
     
 class IsAgent(BasePermission):
     """
