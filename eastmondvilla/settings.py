@@ -194,7 +194,12 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend', 'rest_framework.filters.SearchFilter', 'rest_framework.filters.OrderingFilter'],
+    
 }
+
+
+DATA_UPLOAD_MAX_NUMBER_FILES = 50
+FILE_UPLOAD_MAX_MEMORY_SIZE = 224288000 
 
 # Simple JWT Configuration
 from datetime import timedelta
