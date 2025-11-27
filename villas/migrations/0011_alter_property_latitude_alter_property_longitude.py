@@ -13,11 +13,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='property',
             name='latitude',
-            field=models.DecimalField(blank=True, decimal_places=6000, max_digits=100000, null=True),
+            field=models.DecimalField(blank=True, decimal_places=22, max_digits=6, null=True),
         ),
         migrations.AlterField(
             model_name='property',
             name='longitude',
-            field=models.DecimalField(blank=True, decimal_places=6000, max_digits=100000, null=True),
+            field=models.DecimalField(blank=True, decimal_places=22, max_digits=6, null=True),
         ),
     ]

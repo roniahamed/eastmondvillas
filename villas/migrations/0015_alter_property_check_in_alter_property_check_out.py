@@ -13,11 +13,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='property',
             name='check_in',
-            field=models.TimeField(blank=True, help_text='Standard check-in time.', null=True),
+            field=models.CharField(blank=True, help_text='Standard check-in time.', null=True),
         ),
         migrations.AlterField(
             model_name='property',
             name='check_out',
-            field=models.TimeField(blank=True, help_text='Standard check-out time.', null=True),
+            field=models.CharField(blank=True, help_text='Standard check-out time.', null=True),
         ),
     ]
