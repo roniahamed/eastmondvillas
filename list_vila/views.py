@@ -46,40 +46,59 @@ class vila_list(APIView):
         return Response({"message": "You do not have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
     
 
+from accounts.permissions import IsAdminOrManager
+
 class ContactUsView(APIView):
-    def get(self, request,pk=None):
-        if request.user.role == "admin" or request.user.is_superuser:
-            if pk:
-                contect = get_object_or_404(ContectUs,pk=pk)
-                serializer = ContectUsSerializer(contect)
-                return Response(serializer.data)
-            contect = ContectUs.objects.all()
-            serializer = ContectUsSerializer(contect, many=True)
+
+    def get_permissions(self):
+        # POST → open for everyone
+        if self.request.method == "POST":
+            return [permissions.AllowAny()]
+        
+        # GET, PUT, DELETE → only admin or manager
+        return [IsAdminOrManager()]
+
+    # GET all or single
+    def get(self, request, pk=None):
+        if pk:
+            contact = get_object_or_404(ContectUs, pk=pk)
+            serializer = ContectUsSerializer(contact)
             return Response(serializer.data)
-        return Response({"message": "You do not have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)       
-    def post(self,request):
-        data = request.data
-        serializer = ContectUsSerializer(data=data)
+
+        contacts = ContectUs.objects.all()
+        serializer = ContectUsSerializer(contacts, many=True)
+        return Response(serializer.data)
+
+    # POST (anyone can submit)
+    def post(self, request):
+        serializer = ContectUsSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
 
-            notify_admins_and_managers("New Contact Us", data=serializer.data)
+            notify_admins_and_managers(
+                "New Contact Us", 
+                data=serializer.data
+            )
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+    # UPDATE
     def put(self, request, pk):
-        if request.user.role == "admin" or request.user.is_superuser:
-            contect = get_object_or_404(ContectUs,pk=pk)
-            serializer = ContectUsSerializer(contect, data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"message": "You do not have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
+        contact = get_object_or_404(ContectUs, pk=pk)
+        serializer = ContectUsSerializer(contact, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # DELETE
     def delete(self, request, pk):
-        if request.user.role == "admin" or request.user.is_superuser:
-            contect = get_object_or_404(ContectUs,pk=pk)
-            contect.delete()
-            return Response({"message": "Contect deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
-        return Response({"message": "You do not have permission to perform this action."}, status=status.HTTP_403_FORBIDDEN)
+        contact = get_object_or_404(ContectUs, pk=pk)
+        contact.delete()
+        return Response(
+            {"message": "Contact deleted successfully."},
+            status=status.HTTP_204_NO_CONTENT
+        )
