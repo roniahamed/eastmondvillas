@@ -731,6 +731,34 @@ class AgentMonthlyBookingView(APIView):
         })
 
 
+from .serializers import PropertyAssignmentSerializer
+
+class AssignPropertyView(APIView):
+    permission_classes = [IsAdminOrManager]
+
+    def post(self, request):
+        serializer = PropertyAssignmentSerializer(data=request.data)
+        if serializer.is_valid():
+            prop = serializer.validated_data['property_instance']
+            agent = serializer.validated_data['agent_instance']
+
+            prop.assigned_agent = agent
+            prop.save()
+
+            action = "assigned to" if agent else "removed from"
+            agent_name = agent.name if agent else "None"
+
+            return Response(
+                {
+                    "message": f"Property '{prop.title}' successfully {action} agent {agent_name}",
+                    "property_id": prop.id,
+                    "assigned_agent": agent.id if agent else None
+                }, 
+                status=status.HTTP_200_OK
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 auditlog.register(Property)
 auditlog.register(Media)
 auditlog.register(Booking)

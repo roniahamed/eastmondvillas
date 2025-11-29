@@ -293,3 +293,33 @@ class AgentOptimizedSerializer(serializers.ModelSerializer):
 
     def get_scheduled_viewings(self, obj):
         return 0  # placeholder until you add viewing model
+
+
+class PropertyAssignmentSerializer(serializers.Serializer):
+    property_id = serializers.IntegerField()
+    agent_id = serializers.IntegerField(required=False, allow_null=True)
+
+    def validate(self, data):
+        prop_id = data.get('property_id')
+        agent_id = data.get('agent_id')
+
+        try:
+            prop = Property.objects.get(id=prop_id)
+        except Property.DoesNotExist:
+            raise serializers.ValidationError("Property not found.")
+
+        if agent_id:
+            try:
+                agent = User.objects.get(id=agent_id, role='agent')
+            except User.DoesNotExist:
+                raise serializers.ValidationError("Agent not found or user is not an agent.")
+
+            if prop.assigned_agent and prop.assigned_agent.id != agent_id:
+                raise serializers.ValidationError(
+                    f"Property is already assigned to {prop.assigned_agent.name}. "
+                    "Please remove the current agent before assigning a new one."
+                )
+
+        data['property_instance'] = prop
+        data['agent_instance'] = User.objects.get(id=agent_id) if agent_id else None
+
