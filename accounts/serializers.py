@@ -147,3 +147,21 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
         instance.save()
         return instance
+    
+class AgentSerializer(serializers.ModelSerializer):
+    assigned_total_property = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'role',
+            'name',
+            'email',
+            'phone',
+            'address',
+            'permission',
+            'is_active',
+            'assigned_total_property'
+        ]
+        read_only_fields = fields 

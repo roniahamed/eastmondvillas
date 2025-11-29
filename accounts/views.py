@@ -83,3 +83,13 @@ class UserUpdateView(generics.UpdateAPIView):
 
     def get_object(self):
         return self.request.user
+    
+from .serializers import AgentSerializer
+from django.db.models import Count
+class AgentListView(generics.ListAPIView):
+    serializer_class = AgentSerializer
+
+    def get_queryset(self):
+        return User.objects.filter(role='agent').annotate(
+            assigned_total_property=Count('assigned_villas')
+        )

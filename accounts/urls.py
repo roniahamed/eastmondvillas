@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import UserDeleteView, AdminUserListCreateView, AdminUserDetailView, UserUpdateView
+from .views import UserDeleteView, AdminUserListCreateView, AdminUserDetailView, UserUpdateView, AgentListView
 
 
 urlpatterns = [
@@ -11,5 +11,6 @@ urlpatterns = [
     path('admin/users/', AdminUserListCreateView.as_view(), name='admin-user-list-create'),
     path('admin/users/<int:pk>/', AdminUserDetailView.as_view(), name='admin-user-detail'),
     path('auth/user/update/', UserUpdateView.as_view(), name='user-update'),
+    path('agents/', AgentListView.as_view(), name='agent-list'),
 
 ]
