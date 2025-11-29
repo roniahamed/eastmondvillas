@@ -15,16 +15,34 @@ class LogEntrySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = LogEntry
-        fields = ['user','action','timestamp','type','detials']  # শুধু এই field রিটার্ন হবে
+        fields = ['user','action','timestamp','type','detials'] 
 
     def get_user(self, obj):
+        if obj.actor:
+            return str(obj.actor)
+
         changes = obj.changes or {}
-        if changes.get("data"):
-            if isinstance(changes.get("data")[1], str):
-                data_dict = json.loads(changes.get("data")[1])
-                if data_dict.get("name") is not None:
-                    name = data_dict.get("name")
-                    return name
+        
+        if isinstance(changes, str):
+            try:
+                changes = json.loads(changes)
+            except ValueError:
+                return None
+
+        data_entry = changes.get("data")
+        if data_entry and isinstance(data_entry, list) and len(data_entry) > 1:
+            new_value = data_entry[1]
+
+            if isinstance(new_value, str):
+                try:
+                    data_dict = json.loads(new_value)
+                    if isinstance(data_dict, dict):
+                        return data_dict.get("name")
+                except (json.JSONDecodeError, TypeError):
+                    return None
+            
+        return None
+
     def get_action(self, obj):
         action_map = {
             0: "Created",

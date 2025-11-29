@@ -7,7 +7,7 @@ from rest_framework import status
 from .serializers import LogEntrySerializer
 # Create your views here.
 class ActivityLogView(ListAPIView):
-    queryset = LogEntry.objects.all()
+    queryset = LogEntry.objects.all().order_by('-timestamp')
     serializer_class = LogEntrySerializer
 
 
