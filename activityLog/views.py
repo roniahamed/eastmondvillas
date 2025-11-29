@@ -5,10 +5,12 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import LogEntrySerializer
+from villas.views import StandardResultsSetPagination
 # Create your views here.
 class ActivityLogView(ListAPIView):
     queryset = LogEntry.objects.all().order_by('-timestamp')
     serializer_class = LogEntrySerializer
+    pagination_class = StandardResultsSetPagination
 
 
     def get(self, request, *args, **kwargs):
