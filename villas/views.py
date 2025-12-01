@@ -17,7 +17,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from auditlog.registry import auditlog
 
 from .models import Property, Media, Booking, PropertyImage, BedroomImage, Review, ReviewImage, Favorite
-from .serializers import PropertySerializer , BookingSerializer, MediaSerializer, PropertyImageSerializer, BedroomImageSerializer, ReviewSerializer, ReviewImageSerializer, FavoriteSerializer
+from .serializers import PropertySerializer , BookingSerializer, MediaSerializer, PropertyImageSerializer, BedroomImageSerializer, ReviewSerializer, ReviewImageSerializer, FavoriteSerializer, ReadReviewSerializer
 
 
 from accounts.permissions import IsAdminOrManager, IsAgentWithFullAccess, IsAgent, IsOwnerOrAdminOrManager
@@ -304,7 +304,7 @@ def get_property_availability(request, property_pk):
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    serializer_class = ReviewSerializer
+    # serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
     pagination_class = StandardResultsSetPagination
@@ -317,10 +317,15 @@ class ReviewViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.role in ['admin', 'manager']:
             return Review.objects.all().select_related('property', 'user')
-        return Review.objects.filter(user=user).select_related('property', 'user')
+        return Review.objects.select_related('property', 'user')
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+    
+    def get_serializer_class(self):
+        if self.action in ['list', 'retrieve']:
+            return ReadReviewSerializer
+        return ReviewSerializer
 
     def create(self, request, *args, **kwargs):
         try:
