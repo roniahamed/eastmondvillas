@@ -252,6 +252,20 @@ class ReviewSerializer(serializers.ModelSerializer):
         return data
 
 
+class ReadReviewSerializer(serializers.ModelSerializer):
+    images = ReviewImageSerializer(many=True, read_only=True)
+    user_name = serializers.SerializerMethodField()
+    address = serializers.CharField(source='user.address', read_only=True)
+    property_title = serializers.CharField(source='property.title', read_only=True)
+
+    class Meta:
+        model = Review
+        fields = ['id', 'property_title', 'user_name', 'rating', 'comment', 'created_at', 'images', 'address']
+        read_only_fields = ['user', 'created_at', 'images', 'user_name', 'property_title', 'rating', 'comment', 'address']
+
+    def get_user_name(self, obj):
+        return obj.user.name if obj.user else None
+
 class DailyAnalyticsSerializer(serializers.ModelSerializer):
     class Meta:
         model = DailyAnalytics
