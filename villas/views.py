@@ -30,6 +30,7 @@ from django.utils.timezone import now
 from .models import DailyAnalytics
 from list_vila.models import ContectUs
 from django.db.models.functions import TruncMonth, TruncDay
+from django.db.models import Value, BooleanField
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 20
@@ -67,14 +68,16 @@ class PropertyViewSet(viewsets.ModelViewSet):
 
         if user.is_authenticated:
             queryset = queryset.annotate(is_favorited=Exists(Favorite.objects.filter(property=OuterRef('pk'), user=user))).prefetch_related('favorited_by')
+        else:
+            queryset = queryset.annotate(is_favorited=Value(False, output_field=BooleanField()))
 
         if not user.is_authenticated:
-            return Property.objects.filter(status=Property.StatusType.PUBLISHED).order_by('-created_at')
+            return queryset.filter(status=Property.StatusType.PUBLISHED).order_by('-created_at')
         
         if user.role in ['admin', 'manager']:
-            return Property.objects.all().order_by('-created_at')
+            return queryset.all().order_by('-created_at')
         if user.role == 'agent':
-            return Property.objects.filter(assigned_agent=user).order_by('-created_at')
+            return queryset.filter(assigned_agent=user).order_by('-created_at')
         
         
         

@@ -70,7 +70,7 @@ class PropertySerializer(serializers.ModelSerializer):
     property_stats = serializers.SerializerMethodField()
     media_images = PropertyImageSerializer(many=True, read_only=True)
     bedrooms_images = BedroomImageSerializer(many=True, read_only=True)
-    is_favorited = serializers.SerializerMethodField()
+    is_favorited = serializers.BooleanField(read_only=True)
 
     total_reviews = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
@@ -89,7 +89,7 @@ class PropertySerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'slug', 'created_by', 'created_by_name', 'booking_count', 'media_images', 'bedrooms_images',
-            'created_at', 'updated_at', 'location_coords', 'price_display', 'property_stats', 'total_reviews', 'average_rating'
+            'created_at', 'updated_at', 'location_coords', 'price_display', 'property_stats', 'total_reviews', 'average_rating', 'is_favorited'
         ]
     
     def get_total_reviews(self, obj):
@@ -97,9 +97,6 @@ class PropertySerializer(serializers.ModelSerializer):
 
     def get_average_rating(self, obj):
         return round(getattr(obj, "avg_rating", 0) or 0, 2)
-
-    def get_is_favorited(self, obj):
-        return getattr(obj, "is_favorited", False)
 
     def get_created_by_name(self, obj):
         return obj.created_by.name if obj.created_by else None
