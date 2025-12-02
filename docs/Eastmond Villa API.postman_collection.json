@@ -9,7 +9,7 @@
 	},
 	"item": [
 		{
-			"name": "🔐 Auth",
+			"name": "\ud83d\udd10 Auth",
 			"item": [
 				{
 					"name": "Register",
@@ -362,7 +362,7 @@
 			]
 		},
 		{
-			"name": "👑 Admin Users",
+			"name": "\ud83d\udc51 Admin Users",
 			"item": [
 				{
 					"name": "List Users",
@@ -495,7 +495,7 @@
 			]
 		},
 		{
-			"name": "🏡 Properties",
+			"name": "\ud83c\udfe1 Properties",
 			"item": [
 				{
 					"name": "List Properties",
@@ -845,7 +845,7 @@
 			]
 		},
 		{
-			"name": "📅 Bookings",
+			"name": "\ud83d\udcc5 Bookings",
 			"item": [
 				{
 					"name": "List Bookings",
@@ -980,7 +980,7 @@
 			]
 		},
 		{
-			"name": "ℹ️ Notes",
+			"name": "\u2139\ufe0f Notes",
 			"item": [
 				{
 					"name": "Media Upload",
@@ -1504,12 +1504,77 @@
 			]
 		},
 		{
-			"name": "New Request",
-			"request": {
-				"method": "GET",
-				"header": []
-			},
-			"response": []
+			"name": "\ud83d\udcda Resources",
+			"item": [
+				{
+					"name": "List Resources",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/resources/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"resources",
+								""
+							]
+						},
+						"description": "Get list of available resources (documents, guides, etc.)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "\ud83d\udd14 Notifications",
+			"item": [
+				{
+					"name": "List Notifications",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/notifications/list/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"list",
+								""
+							]
+						},
+						"description": "Get user's notifications"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Notification",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/notifications/list/{{notification_id}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"notifications",
+								"list",
+								"{{notification_id}}",
+								""
+							]
+						},
+						"description": "Get specific notification details"
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"auth": {
