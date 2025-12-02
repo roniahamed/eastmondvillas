@@ -1,0 +1,1525 @@
+{
+	"info": {
+		"_postman_id": "028db816-9dad-474a-970a-1e275a2f9629",
+		"name": "Eastmond Villa API",
+		"description": "Clean, validated Postman collection for Eastmond Villa API. Only real endpoints included (auth, users, properties, bookings, availability). Media is uploaded during property creation only.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "47397198",
+		"_collection_link": "https://www.postman.com/roniahamed-7598805/workspace/softnove/collection/47397198-028db816-9dad-474a-970a-1e275a2f9629?action=share&source=collection_link&creator=47397198"
+	},
+	"item": [
+		{
+			"name": "🔐 Auth",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"newuser@example.com\",\n  \"name\": \"New Customer\",\n  \"phone\": \"+1234567890\",\n  \"password1\": \"SecurePass123!\",\n  \"password2\": \"SecurePass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/registration/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"registration",
+								""
+							]
+						},
+						"description": "Register a new user (role defaults to customer)."
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200){",
+									" const j = pm.response.json();",
+									" pm.environment.set('access_token', j.access);",
+									" pm.environment.set('refresh_token', j.refresh);",
+									" if (j.user){ pm.environment.set('user_id', j.user.pk || j.user.id); }",
+									" pm.test('tokens present', ()=>{pm.expect(j.access).to.exist; pm.expect(j.refresh).to.exist;});",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "email",
+									"value": "newuser@example.com",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "password",
+									"value": "SecurePass124!",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "email",
+									"value": "admin@gmail.com",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "admin",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "agent@gmail.com",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "password",
+									"value": "agent",
+									"type": "text",
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login",
+								""
+							]
+						},
+						"description": "Obtain access + refresh tokens."
+					},
+					"response": []
+				},
+				{
+					"name": "Me",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/auth/user/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"user",
+								""
+							]
+						},
+						"description": "Current authenticated user profile."
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Parse JSON safely and set environment tokens and expirations",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"let json;",
+									"try {",
+									"    json = pm.response.json();",
+									"} catch (e) {",
+									"    json = {};",
+									"}",
+									"",
+									"pm.test(\"Response has access and refresh keys\", function () {",
+									"    pm.expect(json).to.be.an(\"object\");",
+									"    pm.expect(json).to.have.property(\"access\");",
+									"    pm.expect(json).to.have.property(\"refresh\");",
+									"});",
+									"",
+									"if (json && typeof json === 'object') {",
+									"    if (json.access) {",
+									"        pm.environment.set('access_token', json.access);",
+									"    }",
+									"    if (json.refresh) {",
+									"        pm.environment.set('refresh_token', json.refresh);",
+									"    }",
+									"    if (json.access_expiration) {",
+									"        pm.environment.set('access_expiration', String(json.access_expiration));",
+									"    }",
+									"    if (json.refresh_expiration) {",
+									"        pm.environment.set('refresh_expiration', String(json.refresh_expiration));",
+									"    }",
+									"}",
+									"",
+									"// Optional logging for visibility in the Postman console",
+									"console.log('Tokens and expirations updated in environment:', {",
+									"    access_token: pm.environment.get('access_token') ? '[set]' : '[missing]',",
+									"    refresh_token: pm.environment.get('refresh_token') ? '[set]' : '[missing]',",
+									"    access_expiration: pm.environment.get('access_expiration') || '[none]',",
+									"    refresh_expiration: pm.environment.get('refresh_expiration') || '[none]'",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/token/refresh/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"token",
+								"refresh",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/logout/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"logout",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update me",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "image",
+									"type": "file",
+									"src": "postman-cloud:///1f0c598b-c56e-4e80-9dba-fc8ffd0238aa"
+								},
+								{
+									"key": "name",
+									"value": "",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "phone",
+									"value": "",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "address",
+									"value": "",
+									"type": "text",
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/user/update/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"user",
+								"update",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Password Change",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "new_password1",
+									"value": "SecurePass124!",
+									"type": "text"
+								},
+								{
+									"key": "new_password2",
+									"value": "SecurePass124!",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/password/change/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"password",
+								"change",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "👑 Admin Users",
+			"item": [
+				{
+					"name": "List Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/admin/users/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users",
+								""
+							]
+						},
+						"description": "Paginated users (admin only)."
+					},
+					"response": []
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"newmanager@example.com\",\n  \"name\": \"New Manager\",\n  \"password\": \"ManagerPass123!\",\n  \"role\": \"manager\",\n  \"permission\": \"full_access\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/users/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/admin/users/{{target_user_id}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users",
+								"{{target_user_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "image",
+									"type": "file",
+									"src": "postman-cloud:///1f0c598b-c56e-4e80-9dba-fc8ffd0238aa"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/users/{{target_user_id}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users",
+								"{{target_user_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/auth/users/{{target_user_id}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"users",
+								"{{target_user_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "🏡 Properties",
+			"item": [
+				{
+					"name": "List Properties",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "ordering",
+									"value": "-created",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/villas/properties/?ordering=created_at",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"properties",
+								""
+							],
+							"query": [
+								{
+									"key": "ordering",
+									"value": "created_at"
+								}
+							]
+						},
+						"description": "Public + role filtered."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Property",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/villas/properties/{{property_id}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"properties",
+								"{{property_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Property",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "add_guest",
+									"value": " 5",
+									"type": "text"
+								},
+								{
+									"key": "address",
+									"value": " \"Ut ut minus voluptat\"",
+									"type": "text"
+								},
+								{
+									"key": "bathrooms",
+									"value": "5",
+									"type": "text"
+								},
+								{
+									"key": "bedrooms",
+									"value": "5",
+									"type": "text"
+								},
+								{
+									"key": "bedrooms_images",
+									"type": "file",
+									"src": [
+										"postman-cloud:///1f0c598b-c56e-4e80-9dba-fc8ffd0238aa",
+										"postman-cloud:///1f0c2816-bf42-4ee0-af3d-8f0007c30e7b",
+										"postman-cloud:///1f0bdbc4-c7c4-4800-b5c8-72b65721cd24",
+										"postman-cloud:///1f087862-058b-4fe0-b9e0-9a4d4509cb4e"
+									]
+								},
+								{
+									"key": "booking_rate_start",
+									"value": " \"In est fugit volupt\"",
+									"type": "text"
+								},
+								{
+									"key": "calendar_link",
+									"value": "https://www.hesyrype.info",
+									"type": "text"
+								},
+								{
+									"key": "check_in",
+									"value": " \"Dolor minus et paria\"",
+									"type": "text"
+								},
+								{
+									"key": "check_out",
+									"value": " \"Sint natus laborum\"",
+									"type": "text"
+								},
+								{
+									"key": "city",
+									"value": " \"Iste odit cillum cup\"",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": " \"Aut voluptatem at co\"",
+									"type": "text"
+								},
+								{
+									"key": "interior_amenities",
+									"value": "{}",
+									"type": "text"
+								},
+								{
+									"key": "location",
+									"value": " {lat: 25.78857028365476, lng: -80.16725051879881, address: 'dhaka', description: 'dhaka bangladesh'}",
+									"type": "text"
+								},
+								{
+									"key": "outdoor_amenities",
+									"value": "{}",
+									"type": "text"
+								},
+								{
+									"key": "pool",
+									"value": "4",
+									"type": "text"
+								},
+								{
+									"key": "price",
+									"value": "5545475",
+									"type": "text"
+								},
+								{
+									"key": "property_type",
+									"value": " \"rentals\"",
+									"type": "text"
+								},
+								{
+									"key": "rules_and_etiquette",
+									"value": " ['Ullamco maxime nostr']",
+									"type": "text"
+								},
+								{
+									"key": "seo_description",
+									"value": " \"Aut nihil expedita t\"",
+									"type": "text"
+								},
+								{
+									"key": "seo_title",
+									"value": " \"Distinctio Accusant\"",
+									"type": "text"
+								},
+								{
+									"key": "signature_distinctions",
+									"value": "{}",
+									"type": "text"
+								},
+								{
+									"key": "staff_details",
+									"value": " ['Minus adipisicing co']",
+									"type": "text"
+								},
+								{
+									"key": "staff_name",
+									"value": " ['Jonas Sloan']",
+									"type": "text"
+								},
+								{
+									"key": "status",
+									"value": "pending_review",
+									"type": "text"
+								},
+								{
+									"key": "title",
+									"value": " \"Est voluptas omnis q\"",
+									"type": "text"
+								},
+								{
+									"key": "media_images",
+									"type": "file",
+									"src": [
+										"postman-cloud:///1f087862-058b-4fe0-b9e0-9a4d4509cb4e",
+										"postman-cloud:///1f083a02-30c7-43b0-9b1e-4df23cd0af99",
+										"postman-cloud:///1f0c598b-c56e-4e80-9dba-fc8ffd0238aa",
+										"postman-cloud:///1f0c2816-bf42-4ee0-af3d-8f0007c30e7b"
+									]
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/villas/properties/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"properties",
+								""
+							]
+						},
+						"description": "Admin/manager create + media upload."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Property",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "price",
+									"value": "8000",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "published",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "assigned_agent",
+									"value": "87",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/villas/properties/{{property_id}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"properties",
+								"{{property_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Property",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/villas/properties/{{property_id}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"properties",
+								"{{property_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Availability (Month)",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{base_url}}/api/villas/properties/{{property_id}}/availability/?month=12&year=2025",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"properties",
+								"{{property_id}}",
+								"availability",
+								""
+							],
+							"query": [
+								{
+									"key": "month",
+									"value": "12"
+								},
+								{
+									"key": "year",
+									"value": "2025"
+								}
+							]
+						},
+						"description": "Month view booked date ranges (Google Calendar)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "📅 Bookings",
+			"item": [
+				{
+					"name": "List Bookings",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{base_url}}/api/villas/bookings/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"bookings",
+								""
+							]
+						},
+						"description": "User: own bookings; admin/manager: all."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Booking",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"property\": {{property_id}},\n  \"full_name\": \"John Guest\",\n  \"email\": \"guest@example.com\",\n  \"phone\": \"+1234567890\",\n  \"check_in\": \"2025-12-1\",\n  \"check_out\": \"2025-12-12\",\n  \"total_price\": \"5250.00\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/villas/bookings/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"bookings",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Booking",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/villas/bookings/{{booking_id}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"bookings",
+								"{{booking_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Booking Status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"approved\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/villas/bookings/{{booking_id}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"bookings",
+								"{{booking_id}}",
+								""
+							]
+						},
+						"description": "(admin/manager) Status options: pending, approved, rejected, completed, cancelled."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Booking",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/villas/bookings/{{booking_id}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"bookings",
+								"{{booking_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "ℹ️ Notes",
+			"item": [
+				{
+					"name": "Media Upload",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "example.com/",
+							"host": [
+								"example",
+								"com"
+							],
+							"path": [
+								""
+							]
+						},
+						"description": "Media upload only via property creation (media_files + media_metadata arrays). No standalone /media/ endpoints."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Favorite",
+			"item": [
+				{
+					"name": "list fvt property",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/villas/favorites/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"favorites",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Adding and remove",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "property_id",
+								"value": "30",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "property",
+									"value": "7",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/villas/favorites/toggle/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"favorites",
+								"toggle",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Review",
+			"item": [
+				{
+					"name": "Get reviews",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/villas/reviews/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"reviews",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "post create reviews",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "property",
+									"value": "30",
+									"type": "text"
+								},
+								{
+									"key": "user",
+									"value": "",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "rating",
+									"value": "4",
+									"type": "text"
+								},
+								{
+									"key": "comment",
+									"value": "\"This is the best villas\"",
+									"type": "text"
+								},
+								{
+									"key": "images",
+									"type": "file",
+									"src": [
+										"postman-cloud:///1f0c598b-c56e-4e80-9dba-fc8ffd0238aa",
+										"postman-cloud:///1f0c2816-bf42-4ee0-af3d-8f0007c30e7b"
+									]
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/villas/reviews/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"reviews",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "property",
+									"value": "30",
+									"type": "text"
+								},
+								{
+									"key": "user",
+									"value": "",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "rating",
+									"value": "4",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "comment",
+									"value": "\"This is the best villas\"",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "images",
+									"type": "file",
+									"src": [
+										"postman-cloud:///1f0c598b-c56e-4e80-9dba-fc8ffd0238aa",
+										"postman-cloud:///1f0c2816-bf42-4ee0-af3d-8f0007c30e7b"
+									],
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/villas/reviews/1/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"reviews",
+								"1",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Analysis",
+			"item": [
+				{
+					"name": "analytics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/villas/analytics/?range=90",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"analytics",
+								""
+							],
+							"query": [
+								{
+									"key": "2024-01-01",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "end",
+									"value": "2024-03-31",
+									"disabled": true
+								},
+								{
+									"key": "range",
+									"value": "90"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Download",
+			"item": [
+				{
+					"name": "New Request",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/villas/properties/{{property_id}}/downloaded/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"properties",
+								"{{property_id}}",
+								"downloaded",
+								""
+							],
+							"query": [
+								{
+									"key": "2024-01-01",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "end",
+									"value": "2024-03-31",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Agent",
+			"item": [
+				{
+					"name": "agent summary",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/villas/agents/summary/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"agents",
+								"summary",
+								""
+							],
+							"query": [
+								{
+									"key": "2024-01-01",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "end",
+									"value": "2024-03-31",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "booking this months",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"property\": {{property_id}},\n  \"full_name\": \"John Guest\",\n  \"email\": \"guest@example.com\",\n  \"phone\": \"+1234567890\",\n  \"check_in\": \"2025-12-1\",\n  \"check_out\": \"2025-12-12\",\n  \"total_price\": \"5250.00\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/villas/agent/bookings/monthly/?month=12&year=2025",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"agent",
+								"bookings",
+								"monthly",
+								""
+							],
+							"query": [
+								{
+									"key": "month",
+									"value": "12"
+								},
+								{
+									"key": "year",
+									"value": "2025"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Agent",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/agents/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"agents",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Properties",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/villas/properties/assign/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"villas",
+								"properties",
+								"assign",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Announcement",
+			"item": [
+				{
+					"name": "accountment get",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/announcements/announcement/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"announcements",
+								"announcement",
+								""
+							],
+							"query": [
+								{
+									"key": "2024-01-01",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "end",
+									"value": "2024-03-31",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Contact",
+			"item": [
+				{
+					"name": "get",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/list_vila/contect/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"list_vila",
+								"contect",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Activity",
+			"item": [
+				{
+					"name": "Get activity",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/activity-log/list/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"activity-log",
+								"list",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "New Request",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	}
+}
