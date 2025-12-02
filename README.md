@@ -2,6 +2,8 @@
 
 A comprehensive Django REST API for managing luxury villa rentals and property sales, featuring role-based access control, booking management, Google Calendar integration, and advanced analytics.
 
+🌐 **Live Website:** [https://www.eastmondvillas.com/](https://www.eastmondvillas.com/)
+
 ## 📋 Table of Contents
 
 - [Features](#-features)
@@ -155,7 +157,10 @@ A comprehensive Django REST API for managing luxury villa rentals and property s
 
 ## 📚 API Documentation
 
-### Base URL: `http://localhost:8888/api`
+### Base URLs
+
+- **Local Development:** `http://localhost:8888/api`
+- **Production (Live):** `https://api.eastmondvillas.com/api`
 
 ### Core Endpoints
 
@@ -238,7 +243,13 @@ eastmondvilla/
 
 ## 🚢 Deployment
 
-### Production
+### Production (Live Site)
+The application is currently deployed and accessible at:
+- **Website:** https://www.eastmondvillas.com/
+- **API:** https://api.eastmondvillas.com/
+- **API Docs:** https://api.eastmondvillas.com/swagger/
+
+### Production Setup Checklist
 1. Set `DEBUG=False`
 2. Configure PostgreSQL (managed service)
 3. Setup Redis (ElastiCache/Redis Labs)
@@ -246,6 +257,8 @@ eastmondvilla/
 5. Collect static files: `python manage.py collectstatic`
 6. Use Daphne/Gunicorn + Nginx
 7. Setup SSL (Let's Encrypt)
+8. Configure CORS for frontend domain
+9. Set secure environment variables
 
 ### Docker
 ```bash
@@ -263,4 +276,4 @@ docker-compose exec web python manage.py createsuperuser
 
 ---
 
-**Version:** 3.0.0 | **Updated:** December 3, 2025
+**Version:** 3.1.0 | **Updated:** December 3, 2025 | **Live:** [eastmondvillas.com](https://www.eastmondvillas.com/)

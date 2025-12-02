@@ -1,7 +1,11 @@
 # 📘 Eastmond Villa API – Accurate Integration Guide (Updated)
 
-**Version:** 2.0 (Docs corrected)  
-**Base URL:** `http://localhost:8888/api`  
+**Version:** 2.1 (Production Ready)  
+**Base URLs:**
+- **Local Development:** `http://localhost:8888/api`
+- **Production (Live):** `https://api.eastmondvillas.com/api`
+
+**Live Website:** [https://www.eastmondvillas.com/](https://www.eastmondvillas.com/)  
 **Authentication:** JWT (dj-rest-auth + Simple JWT)  
 **Default Content-Type:** `application/json` (Media upload uses `multipart/form-data`)
 
@@ -1199,7 +1203,10 @@ When creating a booking, the system:
 import requests
 from datetime import datetime, timedelta
 
-BASE_URL = 'http://localhost:8888/api'
+# Use environment variable or switch based on deployment
+import os
+BASE_URL = os.getenv('API_BASE_URL', 'http://localhost:8888/api')
+# Production: BASE_URL = 'https://www.eastmondvillas.com/api'
 
 class EastmondVillaAPI:
     def __init__(self):
@@ -1425,7 +1432,9 @@ if __name__ == '__main__':
 ### JavaScript (Fetch API) (Adjusted – simplified image upload)
 
 ```javascript
-const BASE_URL = 'http://localhost:8888/api';
+// Use environment variable or switch based on deployment
+const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8888/api';
+// Production: const BASE_URL = 'https://www.eastmondvillas.com/api';
 
 class EastmondVillaAPI {
   constructor() {
@@ -1659,6 +1668,8 @@ class EastmondVillaAPI {
 
 ### cURL Examples
 
+**Note:** Replace `http://localhost:8888` with `https://api.eastmondvillas.com` for production.
+
 **Register:**
 ```bash
 curl -X POST http://localhost:8888/api/registration/ \
@@ -1790,9 +1801,10 @@ All timestamps are in ISO 8601 format with timezone: `YYYY-MM-DDTHH:MM:SSZ`
 
 ---
 
-**Last Updated:** November 20, 2025  
-**API Version:** 2.0  
+**Last Updated:** December 3, 2025  
+**API Version:** 2.1  
 **Framework:** Django REST Framework + dj-rest-auth  
+**Live Site:** [https://www.eastmondvillas.com/](https://www.eastmondvillas.com/)  
 **Contact:** support@eastmondvilla.com
 
 ---

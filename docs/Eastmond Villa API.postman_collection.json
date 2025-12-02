@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "028db816-9dad-474a-970a-1e275a2f9629",
 		"name": "Eastmond Villa API",
-		"description": "Clean, validated Postman collection for Eastmond Villa API. Only real endpoints included (auth, users, properties, bookings, availability). Media is uploaded during property creation only.",
+		"description": "Complete API collection for Eastmond Villa luxury property management system. Live at: https://www.eastmondvillas.com/ | Includes authentication, properties, bookings, reviews, analytics, and admin management.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "47397198",
 		"_collection_link": "https://www.postman.com/roniahamed-7598805/workspace/softnove/collection/47397198-028db816-9dad-474a-970a-1e275a2f9629?action=share&source=collection_link&creator=47397198"
