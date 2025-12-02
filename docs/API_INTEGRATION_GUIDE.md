@@ -250,7 +250,6 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 **Request Body:**
 ```json
 {
-  "old_password": "OldPass123!",
   "new_password1": "NewPass123!",
   "new_password2": "NewPass123!"
 }
@@ -263,54 +262,6 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 }
 ```
 
----
-
-### 8. Password Reset (Request)
-
-**Endpoint:** `POST /api/auth/password/reset/`  
-**Authentication:** None  
-**Description:** Request password reset email.
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com"
-}
-```
-
-**Success Response (200 OK):**
-```json
-{
-  "detail": "Password reset e-mail has been sent."
-}
-```
-
----
-
-### 9. Password Reset (Confirm)
-
-**Endpoint:** `POST /api/auth/password/reset/confirm/`  
-**Authentication:** None  
-**Description:** Reset password using token from email.
-
-**Request Body:**
-```json
-{
-  "uid": "user-id-encoded",
-  "token": "reset-token-from-email",
-  "new_password1": "NewPassword123!",
-  "new_password2": "NewPassword123!"
-}
-```
-
-**Success Response (200 OK):**
-```json
-{
-  "detail": "Password has been reset with the new password."
-}
-```
-
----
 
 ## 👑 User Management (Admin)
 
@@ -1845,14 +1796,3 @@ All timestamps are in ISO 8601 format with timezone: `YYYY-MM-DDTHH:MM:SSZ`
 **Contact:** support@eastmondvilla.com
 
 ---
-### 🟡 বাংলা সারাংশ (Bangla Summary)
-এই আপডেটেড ডকুমেন্টে আপনার প্রজেক্টের আসল এন্ডপয়েন্টগুলো ঠিক করা হয়েছে:
-- আগের ভুল `/api/accounts/...` এখন সরানো – সঠিক পাথ `/api/auth/...`, `/api/registration/`, `/api/admin/users/`, `/api/villas/properties/`, `/api/villas/bookings/`।
-- Property model এ `has_pool` ছিল না; আসলে আছে `pool` (ইন্টিজার)।
-- Booking এ `full_name` ফিল্ড যোগ করা হয়েছে (আগের ডকসে ছিল না)।
-- আলাদা `/properties/{id}/media/` এন্ডপয়েন্ট নেই – মিডিয়া আসে Property response এর ভিতরে।
-- Media আপলোড করতে multipart form ব্যবহার করতে হবে এবং প্রতিটি ফাইলের জন্য matching `media_metadata` দিতে হবে।
-- Nested serializer এর মাধ্যমে `property_details`, `user_details`, `media` ইতিমধ্যে আসে – উদাহরণ আপডেট করা হয়েছে।
-এই গাইড অনুযায়ী Postman collection আপডেট করুন – ভুল path ও অতিরিক্ত ফিল্ডগুলো বাদ দিন।
-যদি আরও বাংলা ভার্সন দরকার থাকে সম্পূর্ণ গাইডের, জানাবেন।
-
