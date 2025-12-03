@@ -291,17 +291,20 @@ class ReviewAdmin(ModelAdmin):
         'user_link',
         'rating',
         'created_at',
+        'status',
     )
     
     list_filter = (
         'rating',
         'created_at',
+        'status',
     )
     
     search_fields = (
         'property__title',
         'user__name',
         'comment',
+        'status',
     )
     
     readonly_fields = ('created_at',)
@@ -313,6 +316,7 @@ class ReviewAdmin(ModelAdmin):
                 'user',
                 'rating',
                 'comment',
+                'status',
             )
         }),
         ('Metadata', {
