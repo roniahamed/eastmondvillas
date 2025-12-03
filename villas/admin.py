@@ -4,7 +4,11 @@ from django.urls import reverse
 from django.db.models import Count
 from unfold.admin import ModelAdmin, TabularInline, StackedInline
 from unfold.decorators import display
-from .models import Property, Media, Booking, PropertyImage, BedroomImage, Review, ReviewImage, Favorite
+from .models import Property, Media, Booking, PropertyImage, BedroomImage, Review, ReviewImage, Favorite, PropertyVideo
+
+
+
+
 
 
 class MediaInline(TabularInline):
@@ -62,6 +66,26 @@ class BedroomImageInline(admin.TabularInline):
         if obj.image:
             return format_html('<img src="{}" style="height: 80px;" />', obj.image.url)
         return "-"
+
+
+
+@admin.register(PropertyVideo)
+class PropertyVideoAdmin(ModelAdmin):
+    list_display = ('id', 'video_preview')
+    readonly_fields = ('video_preview',)
+
+    @display(description='Video Preview')
+    def video_preview(self, obj):
+        """Display a video preview if available."""
+        if obj.video:
+            return format_html(
+                '<video width="320" height="240" controls>'
+                '<source src="{}" type="video/mp4">'
+                'Your browser does not support the video tag.'
+                '</video>',
+                obj.video.url
+            )
+        return '-'
 
 @admin.register(Property)
 class PropertyAdmin(ModelAdmin):
