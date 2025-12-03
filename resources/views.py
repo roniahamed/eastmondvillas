@@ -41,7 +41,12 @@ class ResourceListAPIView(APIView):
 
     def post(self, request):
         if request.user.is_authenticated and request.user.role in ['admin']:
-            serializer = ResourceSerializer(data=request.data)
+            is_many = isinstance(request.data, list)
+            if is_many:
+                serializer = ResourceSerializer(data=request.data, many=True)
+            else:
+                serializer = ResourceSerializer(data=request.data)
+                
             if serializer.is_valid():
                 serializer.save()
                 create_notification_for_admin_manager_agent(request.user,"New Resource Added", data=serializer.data)
