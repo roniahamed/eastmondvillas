@@ -257,8 +257,8 @@ class ReadReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['id', 'property_title', 'user_name', 'rating', 'comment', 'created_at', 'images', 'address']
-        read_only_fields = ['user', 'created_at', 'images', 'user_name', 'property_title', 'rating', 'comment', 'address']
+        fields = ['id', 'property_title', 'user_name', 'rating', 'comment', 'created_at', 'images', 'address', 'status']
+        read_only_fields = ['user', 'created_at', 'images', 'user_name', 'property_title', 'rating', 'comment', 'address', 'status']
 
     def get_user_name(self, obj):
         return obj.user.name if obj.user else None
