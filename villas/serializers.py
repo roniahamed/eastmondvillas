@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Property, Media, Booking, PropertyImage, BedroomImage, Review, ReviewImage, Favorite, DailyAnalytics
+from .models import Property, Media, Booking, PropertyImage, BedroomImage, Review, ReviewImage, Favorite, DailyAnalytics, PropertyVideo
 from accounts.models import User
 from datetime import date, datetime
 from .utils import validate_date_range, is_valid_date
@@ -62,6 +62,13 @@ class FavoriteSerializer(serializers.ModelSerializer):
         return value
 
 
+class PropertyVideoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PropertyVideo
+        fields = ['id', 'title', 'video']
+        read_only_fields = ['id', 'title', 'video']
+
+
 class PropertySerializer(serializers.ModelSerializer):
     created_by_name = serializers.SerializerMethodField()
     location_coords = serializers.SerializerMethodField()
@@ -71,6 +78,7 @@ class PropertySerializer(serializers.ModelSerializer):
     media_images = PropertyImageSerializer(many=True, read_only=True)
     bedrooms_images = BedroomImageSerializer(many=True, read_only=True)
     is_favorited = serializers.BooleanField(read_only=True)
+    videos = PropertyVideoSerializer(many=True, read_only=True)
 
     total_reviews = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
@@ -85,11 +93,11 @@ class PropertySerializer(serializers.ModelSerializer):
             'longitude', 'place_id', 'seo_title', 'seo_description',
             'signature_distinctions', 'staff', 'calendar_link',
             'created_at', 'updated_at', 'assigned_agent', 'created_by', 'created_by_name',
-            'booking_count', 'location_coords', 'property_stats', 'media_images', 'bedrooms_images', 'is_favorited', 'check_in', 'check_out', 'rules_and_etiquette', 'total_reviews', 'average_rating'
+            'booking_count', 'location_coords', 'property_stats', 'media_images', 'bedrooms_images', 'is_favorited', 'videos', 'check_in', 'check_out', 'rules_and_etiquette', 'total_reviews', 'average_rating'
         ]
         read_only_fields = [
             'slug', 'created_by', 'created_by_name', 'booking_count', 'media_images', 'bedrooms_images',
-            'created_at', 'updated_at', 'location_coords', 'price_display', 'property_stats', 'total_reviews', 'average_rating', 'is_favorited'
+            'created_at', 'updated_at', 'location_coords', 'price_display', 'property_stats', 'total_reviews', 'average_rating', 'is_favorited', 'videos'
         ]
     
     def get_total_reviews(self, obj):
