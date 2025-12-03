@@ -104,7 +104,7 @@ class Property(models.Model):
 
 
 
-class propertyVideo(models.Model):
+class PropertyVideo(models.Model):
     property = models.ForeignKey("Property", on_delete=models.CASCADE, related_name="media_videos")
     video = models.FileField(upload_to="properties/videos/")
 
