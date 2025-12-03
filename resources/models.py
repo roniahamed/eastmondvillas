@@ -18,12 +18,20 @@ class Resource(models.Model):
         choices=CATEGORY_CHOICES
     )
     description = models.TextField()
-    file = models.FileField(upload_to='resources/')
+    # file = models.FileField(upload_to='resources/')
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
+    
+
+class ResourceMedia(models.Model):
+    resource = models.ForeignKey(Resource, on_delete=models.CASCADE, related_name='media_resources')
+    file = models.FileField(upload_to='resources/middle/')
+
+    def __str__(self):
+        return self.resource.title
 
 
 auditlog.register(Resource)
