@@ -34,6 +34,9 @@ class Property(models.Model):
     booking_rate = models.JSONField(default=dict, blank=True, help_text="JSON format, e.g., { booking:  ['day':2, 'price': 500] }")
 
     # property details
+
+    security_deposit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
     listing_type = models.CharField(max_length=10, choices=ListingType.choices, default=ListingType.FOR_RENT)
     status = models.CharField(max_length=20, choices=StatusType.choices, default=StatusType.DRAFT)
 
@@ -49,6 +52,8 @@ class Property(models.Model):
     outdoor_amenities = models.JSONField(default=dict, blank=True, help_text="JSON format, e.g., {'wifi': true, 'pool': 'private'}")
 
     interior_amenities = models.JSONField(default=dict, blank=True, help_text="JSON format, e.g., {'wifi': true, 'pool': 'private'}")
+
+    concierge_services = models.JSONField(default=dict, blank=True, help_text="JSON format, e.g., {'airport_pickup': true, 'grocery_shopping': true}")
 
 
 
@@ -96,6 +101,12 @@ class Property(models.Model):
         if not self.slug:
             self.slug = self._generate_unique_slug()
         super().save(*args, **kwargs)
+
+
+
+class propertyVideo(models.Model):
+    property = models.ForeignKey("Property", on_delete=models.CASCADE, related_name="media_videos")
+    video = models.FileField(upload_to="properties/videos/")
 
 
 # Media model for Villa images
@@ -242,6 +253,8 @@ class PropertyImage(models.Model):
 class BedroomImage(models.Model):
     property = models.ForeignKey("Property", on_delete=models.CASCADE, related_name="bedrooms_images")
     image = models.ImageField(upload_to="properties/bedrooms/")
+    name = models.CharField(max_length=255, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
 
 
 class ReviewStatus(models.TextChoices):
