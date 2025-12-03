@@ -232,7 +232,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ['id', 'property', 'user', 'rating', 'comment', 'created_at', 'images']
+        fields = ['id', 'property', 'user', 'rating', 'comment', 'created_at', 'images', 'status']
         read_only_fields = ['user', 'created_at', 'images']
 
     def validate_rating(self, value):
