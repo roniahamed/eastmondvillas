@@ -244,11 +244,17 @@ class BedroomImage(models.Model):
     image = models.ImageField(upload_to="properties/bedrooms/")
 
 
+class ReviewStatus(models.TextChoices):
+        PENDING = 'pending', 'Pending'
+        APPROVED = 'approved', 'Approved'
+        DECLINED = 'declined', 'Declined'
+
 class Review(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='reviews')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviews')
     rating = models.PositiveIntegerField()
     comment = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=ReviewStatus.choices, default=ReviewStatus.PENDING)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
