@@ -305,22 +305,22 @@ def get_property_availability(request, property_pk):
 
     return Response(booked_dates, status=status.HTTP_200_OK)
 
-
+from .models import ReviewStatus
 class ReviewViewSet(viewsets.ModelViewSet):
     # serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['property__id', 'rating', 'user__id']
+    filterset_fields = ['property__id', 'rating', 'user__id', 'status']
     search_fields = ['comment', 'property__title', 'user__username']
-    ordering_fields = ['rating', 'created_at']
+    ordering_fields = ['rating', 'created_at', 'status']
 
     def get_queryset(self):
         user = self.request.user
         if user.role in ['admin', 'manager']:
             return Review.objects.all().select_related('property', 'user')
-        return Review.objects.select_related('property', 'user')
+        return Review.objects.select_related('property', 'user').filter(status=ReviewStatus.APPROVED)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
