@@ -16,7 +16,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from auditlog.registry import auditlog
 
-from .models import Property, Media, Booking, PropertyImage, BedroomImage, Review, ReviewImage, Favorite
+from .models import Property, Media, Booking, PropertyImage, BedroomImage, Review, ReviewImage, Favorite, DailyAnalytics, PropertyVideo
 from .serializers import PropertySerializer , BookingSerializer, MediaSerializer, PropertyImageSerializer, BedroomImageSerializer, ReviewSerializer, ReviewImageSerializer, FavoriteSerializer, ReadReviewSerializer
 
 
@@ -27,7 +27,6 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.pagination import PageNumberPagination
 
 from django.utils.timezone import now
-from .models import DailyAnalytics
 from list_vila.models import ContectUs
 from django.db.models.functions import TruncMonth, TruncDay
 from django.db.models import Value, BooleanField
@@ -111,7 +110,7 @@ class PropertyViewSet(viewsets.ModelViewSet):
         try:
             property_instance.save()
         except Exception as e:
-            print(f"Could not create Google Calendar for {property_instance.title}: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def create(self, request, *args, **kwargs):
 
@@ -122,7 +121,16 @@ class PropertyViewSet(viewsets.ModelViewSet):
                 self.perform_create(property_serializer)
                 property_instance = property_serializer.instance
 
+                videos = request.FILES.getlist('videos')
+
+                for vid in videos:
+                    if not vid:
+                        continue
+                    if hasattr(vid, 'name') and getattr(vid, 'size', None) and vid.size > 0:
+                        PropertyVideo.objects.create(property=property_instance, video=vid)
+
                 media_images = request.FILES.getlist('media_images')
+            
 
                 if not media_images:
                     return Response({"error": "At least one media image is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -135,19 +143,57 @@ class PropertyViewSet(viewsets.ModelViewSet):
                         PropertyImage.objects.create(property=property_instance, image=img)
 
                 bedrooms_images = request.FILES.getlist('bedrooms_images')
+                row_meta = request.data.get('bedrooms_meta', '[]')
+
+                if bedrooms_images and not row_meta:
+                    return Response({"error": "Bedroom metadata is required when uploading bedroom images."}, status=status.HTTP_400_BAD_REQUEST)
+                if row_meta and not bedrooms_images:
+                    return Response({"error": "At least one bedroom image is required when providing bedroom metadata."}, status=status.HTTP_400_BAD_REQUEST)
+
+                bedrooms_meta = []
+
+                if row_meta:
+                    try:
+                        bedrooms_meta = json.loads(row_meta) 
+                    except json.JSONDecodeError:
+                        return Response({"error": "Invalid JSON format for bedrooms_meta."}, status=status.HTTP_400_BAD_REQUEST)
+                if len(bedrooms_meta) != len(bedrooms_images):
+                    return Response({"error": f"The number of bedroom images: {len(bedrooms_images)} and metadata: {len(bedrooms_meta)} entries must match."}, status=status.HTTP_400_BAD_REQUEST)
+
+                for meta in bedrooms_meta:
+                    if 'index' not in meta or 'name' not in meta:
+                        return Response({"error": "Each bedroom metadata entry must contain 'index' and 'name'."}, status=status.HTTP_400_BAD_REQUEST)
                 
-                for img in bedrooms_images:
-                    if not img:
-                        print("Skipped empty bedroom image file.")
-                        continue
-                    if hasattr(img, 'name') and getattr(img, 'size', None) and img.size > 0:
-                        BedroomImage.objects.create(property=property_instance, image=img)
+                meta_indexes = sorted(m.get('index') for m in bedrooms_meta)
+
+                if meta_indexes != list(range(len(bedrooms_meta))):
+                    return Response({"error": "Bedroom metadata 'index' values must be sequential starting from 0."}, status=status.HTTP_400_BAD_REQUEST)
+                
+                meta_map = {m["index"]: m for m in bedrooms_meta}
+
+                for idx, img in enumerate(bedrooms_images):
+                    if not img or getattr(img, "size", 0) <= 0:
+                        return Response(
+                            {"error": f"Invalid or empty bedroom image at index {idx}."},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+
+                    meta = meta_map[idx]
+                    BedroomImage.objects.create(
+                        property=property_instance,
+                        image=img,
+                        name=meta.get("name"),
+                        description=meta.get("description")
+                    )
+
+
                 
         except serializers.ValidationError as e:
             return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+        property_instance.refresh_from_db()
         final_serializer = self.get_serializer(property_instance)
         headers = self.get_success_headers(final_serializer.data)
         return Response(final_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
