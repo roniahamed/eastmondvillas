@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'announcements',
     'resources',
     'activityLog',
+    'faqs',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
