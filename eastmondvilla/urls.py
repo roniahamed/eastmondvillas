@@ -29,8 +29,7 @@ urlpatterns = [
     path('api/announcements/', include('announcements.urls')),
     path('api/resources/', include('resources.urls')),
     path('api/activity-log/', include('activityLog.urls')),
-
-
+    path('api/faqs/', include('faqs.urls')),
     path('schema/', SpectacularAPIView.as_view(), name='schema'),  # The OpenAPI schema
     path('swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),  # Swagger UI
     path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),  # ReDoc UI
