@@ -29,7 +29,7 @@ class PropertyImageSerializer(serializers.ModelSerializer):
 class BedroomImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = BedroomImage
-        fields = ["id", "image"]
+        fields = ["id", "image", 'name', 'description']
 
 
 class PropertyFavoriteSerializer(serializers.ModelSerializer):
