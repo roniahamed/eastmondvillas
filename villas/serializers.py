@@ -65,8 +65,8 @@ class FavoriteSerializer(serializers.ModelSerializer):
 class PropertyVideoSerializer(serializers.ModelSerializer):
     class Meta:
         model = PropertyVideo
-        fields = ['id', 'title', 'video']
-        read_only_fields = ['id', 'title', 'video']
+        fields = ['id',  'video']
+        read_only_fields = ['id', 'video']
 
 
 class PropertySerializer(serializers.ModelSerializer):
@@ -78,7 +78,7 @@ class PropertySerializer(serializers.ModelSerializer):
     media_images = PropertyImageSerializer(many=True, read_only=True)
     bedrooms_images = BedroomImageSerializer(many=True, read_only=True)
     is_favorited = serializers.BooleanField(read_only=True)
-    videos = PropertyVideoSerializer(many=True, read_only=True)
+    videos = PropertyVideoSerializer(source="media_videos",many=True, read_only=True)
 
     total_reviews = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
