@@ -84,6 +84,9 @@ class Property(models.Model):
     # agent details
     assigned_agent = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_villas', help_text='Agent assigned to manage this villa', limit_choices_to={'role': 'agent'})
 
+    commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="Commission rate (%) for the assigned agent.")
+    damage_deposit = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Damage deposit amount for the property.")
+
     def __str__(self):
         return f"{self.title} ({self.city})"
 
