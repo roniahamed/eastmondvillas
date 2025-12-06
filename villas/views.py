@@ -745,7 +745,7 @@ class AgentMonthlyBookingView(APIView):
             # check_in__year=year,
             # check_in__month=month,
             check_in__lte=month_end,
-            check_out_gte=month_start,
+            check_out__gte=month_start,
             status=Booking.STATUS.Approved
         ).order_by("-check_in")
 
