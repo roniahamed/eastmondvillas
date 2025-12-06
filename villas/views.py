@@ -705,8 +705,8 @@ def validate_month_year(month, year):
         return False, "month must be between 1 and 12"
 
     current_year = datetime.now().year
-    if year < 1900 or year > current_year:
-        return False, f"year must be between 1900 and {current_year}"
+    if year < 1900 or year > current_year + 5:
+        return False, f"year must be between 1900 and {current_year + 5}"
 
     return True, (month, year)
 
