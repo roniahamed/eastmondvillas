@@ -711,6 +711,7 @@ def validate_month_year(month, year):
     return True, (month, year)
 
 
+from calendar import monthrange
 
 class AgentMonthlyBookingView(APIView):
 
@@ -736,11 +737,16 @@ class AgentMonthlyBookingView(APIView):
 
         month, year = result
 
+        month_start = date(year, month, 1 )
+        month_end =  date(year, month, monthrange(year, month)[1])
+
         # -------- prefetch monthly bookings (N+1 fixed) --------
         monthly_bookings = Booking.objects.filter(
-            check_in__year=year,
-            check_in__month=month,
-             status=Booking.STATUS.Approved
+            # check_in__year=year,
+            # check_in__month=month,
+            check_in__lte=month_end,
+            check_out_gte=month_start,
+            status=Booking.STATUS.Approved
         ).order_by("-check_in")
 
         properties = (
