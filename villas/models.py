@@ -45,7 +45,7 @@ class Property(models.Model):
     city = models.CharField(max_length=120, blank=True)
 
     add_guest = models.PositiveIntegerField(default=1)
-    bedrooms = models.PositiveIntegerField(default=0)
+    bedrooms = models.DecimalField(max_digits=3, decimal_places=1, default=0)
     bathrooms = models.PositiveIntegerField(default=0)
     pool = models.PositiveIntegerField(default=0)
     
