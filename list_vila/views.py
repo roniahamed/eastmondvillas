@@ -79,6 +79,7 @@ class ContactUsView(APIView):
                 "New Contact Us", 
                 data=serializer.data
             )
+            
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
