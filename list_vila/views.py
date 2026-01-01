@@ -5,6 +5,9 @@ from django.shortcuts import get_object_or_404
 from .models import VilaListing,ContectUs
 from .serializers import VilaListingSerializer,ContectUsSerializer
 from notifications.utils import notify_admins_and_managers
+from .utils import send_email
+from django.template.loader import render_to_string
+from django.conf import settings
 
 # Create your views here.
 
@@ -79,7 +82,24 @@ class ContactUsView(APIView):
                 "New Contact Us", 
                 data=serializer.data
             )
-            
+
+            template = render_to_string(
+                "email/contact_email.html",
+                {
+                    "name": serializer.data.get("name"),
+                    "email": serializer.data.get("email"),
+                    "phone": serializer.data.get("phone"),
+                    "message": serializer.data.get("message"),
+                }
+            )
+
+            recipient_list = [settings.DEFAULT_FROM_EMAIL] # Admin email
+
+            send_email(
+                subject = "New Contact Us Submission",
+                recipient_list = recipient_list + [serializer.data.get("email")],
+                template = template
+            )
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
