@@ -165,3 +165,10 @@ class AgentSerializer(serializers.ModelSerializer):
             'assigned_total_property'
         ]
         read_only_fields = fields 
+
+
+class SimpleUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'name', 'email', 'role']
+        read_only_fields = fields
