@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import PropertyViewSet, BookingViewSet, get_property_availability, FavoriteViewSet, ReviewViewSet, property_downloaded, DeshboardViewApi, AnalyticsSummaryView, AgentSummaryListView, AgentMonthlyBookingView, AssignPropertyView
+from .views import PropertyViewSet, BookingViewSet, get_property_availability, FavoriteViewSet, ReviewViewSet, property_downloaded, DeshboardViewApi, AnalyticsSummaryView, AgentSummaryListView, AgentMonthlyBookingView, AssignPropertyView, AllUserListView
 
 
 router = DefaultRouter()
@@ -20,4 +20,6 @@ urlpatterns = [
     path("agents/summary/", AgentSummaryListView.as_view(), name="agent-summary-list"),
     path("agent/bookings/monthly/", AgentMonthlyBookingView.as_view(), name="agent-monthly-booking"),
     path("assign-property/", AssignPropertyView.as_view(), name="assign-property"),
+
+    path("all-users/", AllUserListView.as_view(), name="all-user-list"),
 ]
