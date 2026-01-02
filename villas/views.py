@@ -18,6 +18,7 @@ from auditlog.registry import auditlog
 
 from .models import Property, Media, Booking, PropertyImage, BedroomImage, Review, ReviewImage, Favorite, DailyAnalytics, PropertyVideo
 from .serializers import PropertySerializer , BookingSerializer, MediaSerializer, PropertyImageSerializer, BedroomImageSerializer, ReviewSerializer, ReviewImageSerializer, FavoriteSerializer, ReadReviewSerializer
+from accounts.serializers import SimpleUserSerializer
 
 
 from accounts.permissions import IsAdminOrManager, IsAgentWithFullAccess, IsAgent, IsOwnerOrAdminOrManager
@@ -817,6 +818,27 @@ class AssignPropertyView(APIView):
                 status=status.HTTP_200_OK
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class Standard_50_ResultsSetPagination(PageNumberPagination):
+    page_size = 50
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+class AllUserListView(generics.ListAPIView):
+    serializer_class = SimpleUserSerializer
+    permission_classes = [IsAdminUser]
+    pagination_class = Standard_50_ResultsSetPagination
+    filter_backends = [SearchFilter, OrderingFilter, DjangoFilterBackend]
+    search_fields = ['^name', '^email']
+    ordering_fields = ['name', 'email', 'date_joined']
+    filterset_fields = ['role']
+
+    def get_queryset(self):
+        return User.objects.all().order_by('name')
+
+
 
 
 auditlog.register(Property)
