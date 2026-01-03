@@ -3,4 +3,5 @@ from .views import AnnouncementListCreateAPIView
 
 urlpatterns = [
     path('announcement/', AnnouncementListCreateAPIView.as_view(), name='announcementViews'),
+    path('announcement/<int:pk>/', AnnouncementListCreateAPIView.as_view(), name='announcementDetailViews'),
 ]   
