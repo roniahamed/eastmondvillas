@@ -38,3 +38,11 @@ class AnnouncementListCreateAPIView(APIView):
         out_serializer = AnnouncementSerializer(announcement)
         create_notification_for_customers(request.user,title="New Announcement", data=out_serializer.data)
         return Response(out_serializer.data, status=status.HTTP_201_CREATED)
+    def delete(self, request, pk):
+        try:
+            announcement = Announcement.objects.get(pk=pk)
+        except Announcement.DoesNotExist:
+            return Response({"message": "Announcement not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        announcement.delete()
+        return Response({"message": "Announcement deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
