@@ -771,6 +771,7 @@ class AgentMonthlyBookingView(APIView):
                     "check_out": b.check_out,
                     "status": b.status,
                     "total_price": b.total_price,
+                    
                 }
                 for b in prop.monthly_bookings
             ]
@@ -782,6 +783,7 @@ class AgentMonthlyBookingView(APIView):
                 "total_bookings_this_month": len(prop.monthly_bookings),
                 "bookings": booking_list,
                 "status": prop.status,
+                "listing_type": prop.listing_type,
             })
 
         return Response({
