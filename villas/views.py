@@ -837,7 +837,32 @@ class AllUserListView(generics.ListAPIView):
 
     def get_queryset(self):
         return User.objects.all().order_by('name')
+    
 
+class NewsletterPropertySentView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        # Implementation for newsletter property availability
+        return Response({"detail": "Newsletter property availability endpoint."}, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        # Implementation for sending newsletter properties
+        return Response({"detail": "Newsletter properties sent."}, status=status.HTTP_200_OK)
+
+
+
+class GetPropertyBySlugView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, slug):
+        try:
+            prop = Property.objects.get(slug=slug, status=Property.StatusType.PUBLISHED)
+        except Property.DoesNotExist:
+            return Response({"error": "Property not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = PropertySerializer(prop, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 
