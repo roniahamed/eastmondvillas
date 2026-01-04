@@ -149,12 +149,12 @@ class PropertySerializer(serializers.ModelSerializer):
                     stats[status] += 1
         return stats
 
-    def validate(self, data):
-        lat = data.get('latitude')
-        lng = data.get('longitude')
-        if (lat is not None and lng is None) or (lat is None and lng is not None):
-            raise serializers.ValidationError("Both latitude and longitude must be provided together.")
-        return data
+    # def validate(self, data):
+    #     lat = data.get('latitude')
+    #     lng = data.get('longitude')
+    #     if (lat is not None and lng is None) or (lat is None and lng is not None):
+    #         raise serializers.ValidationError("Both latitude and longitude must be provided together.")
+    #     return data
 
 
 
@@ -342,3 +342,8 @@ class PropertyAssignmentSerializer(serializers.Serializer):
         data['property_instance'] = prop
         data['agent_instance'] = User.objects.get(id=agent_id) if agent_id else None
 
+
+class NewsletterPropertyList(serializers.Serializer):
+    class Meta:
+        fields = ['id', 'title', 'status', 'bedrooms', 'bathrooms', 'price', 'address', 'city', 'pool', 'listing_type']
+    
