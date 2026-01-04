@@ -781,6 +781,7 @@ class AgentMonthlyBookingView(APIView):
                 "city": prop.city,
                 "total_bookings_this_month": len(prop.monthly_bookings),
                 "bookings": booking_list,
+                "status": prop.status,
             })
 
         return Response({
